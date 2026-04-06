@@ -71,13 +71,6 @@ const approaches = [
     }
 ];
 
-const tuitionInfo = [
-    { grade: 'Ganeinu', price: '$2,000' },
-    { grade: 'Kindergarten', price: '$10,000' },
-    { grade: 'Grade 1', price: '$32,500' },
-    { grade: 'Grades 2–8', price: '$35,000' }
-];
-
 const schoolHighlights = {
     academics: [
         'Integrated general + Judaic curriculum',
@@ -276,23 +269,6 @@ const schoolHighlights = {
                         <div class="bg-white/20 backdrop-blur-sm rounded-xl p-6 text-center">
                             <p class="text-white text-sm uppercase tracking-wider mb-2">Average Tuition Paid</p>
                             <p class="text-white text-4xl font-bold">$8,178.90</p>
-                        </div>
-                    </div>
-
-                    <!-- Full-Cost Tuition - De-emphasized -->
-                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-                        <h3 class="font-serif text-lg text-slate-600 mb-4 text-center">Full-Cost Tuition (Before Financial Aid)</h3>
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div 
-                                v-for="(item, index) in tuitionInfo" 
-                                :key="index"
-                                class="border-b border-slate-100 pb-3"
-                            >
-                                <div class="flex justify-between items-center">
-                                    <span class="text-slate-500 text-sm">{{ item.grade }}</span>
-                                    <span class="text-slate-400 font-medium text-sm">{{ item.price }}</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
