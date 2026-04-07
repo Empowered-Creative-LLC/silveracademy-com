@@ -271,6 +271,14 @@ const schoolHighlights = {
                             <p class="text-white text-4xl font-bold">$8,178.90</p>
                         </div>
                     </div>
+
+                    <!-- Additional Information -->
+                    <div class="bg-white p-8 md:p-10 rounded-2xl shadow-lg text-center">
+                        <p class="text-slate-700 text-lg leading-relaxed">
+                            We are committed to making a Silver Academy education accessible to families.
+                            We encourage you to connect with our office to learn more about tuition and personalized support options.
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
