@@ -317,7 +317,7 @@ const submit = () => {
                                     </div>
                                     <div>
                                         <h3 class="font-semibold text-slate-900 text-sm">Phone</h3>
-                                        <a href="tel:717-238-8775" class="text-brand-600 hover:text-brand-700 transition-colors">717-238-8775</a>
+                                        <a href="tel:717-769-5870" class="text-brand-600 hover:text-brand-700 transition-colors">717-769-5870</a>
                                     </div>
                                 </div>
                                 <div class="flex items-start gap-4">
@@ -326,7 +326,8 @@ const submit = () => {
                                     </div>
                                     <div>
                                         <h3 class="font-semibold text-slate-900 text-sm">Address</h3>
-                                        <p class="text-slate-600">2986 N. 2nd Street<br>South Hall Building<br>Harrisburg, PA 17110</p>
+                                        <p class="text-slate-600">Physical Address:<br>2637 N. Front St<br>Harrisburg, PA 17110</p>
+                                        <p class="text-slate-600 mt-2">Mailing Address:<br>PO Box 60097<br>Harrisburg, PA 17106</p>
                                     </div>
                                 </div>
                             </div>
