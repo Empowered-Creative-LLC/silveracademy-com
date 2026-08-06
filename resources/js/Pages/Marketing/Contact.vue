@@ -317,7 +317,7 @@ const submit = () => {
                                     </div>
                                     <div>
                                         <h3 class="font-semibold text-slate-900 text-sm">Phone</h3>
-                                        <a href="tel:717-238-8775" class="text-brand-600 hover:text-brand-700 transition-colors">717-238-8775</a>
+                                        <a href="tel:717-769-5870" class="text-brand-600 hover:text-brand-700 transition-colors">717-769-5870</a>
                                     </div>
                                 </div>
                                 <div class="flex items-start gap-4">
@@ -325,8 +325,17 @@ const submit = () => {
                                         <MapPinIcon class="w-6 h-6 text-brand-600" />
                                     </div>
                                     <div>
-                                        <h3 class="font-semibold text-slate-900 text-sm">Address</h3>
-                                        <p class="text-slate-600">2986 N. 2nd Street<br>South Hall Building<br>Harrisburg, PA 17110</p>
+                                        <h3 class="font-semibold text-slate-900 text-sm">Physical Address</h3>
+                                        <p class="text-slate-600">2637 N. Front St<br>Harrisburg, PA 17110</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-4">
+                                    <div class="w-12 h-12 bg-brand-100 rounded-full flex items-center justify-center shrink-0">
+                                        <MapPinIcon class="w-6 h-6 text-brand-600" />
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-slate-900 text-sm">Mailing Address</h3>
+                                        <p class="text-slate-600">PO Box 60097<br>Harrisburg, PA 17106</p>
                                     </div>
                                 </div>
                             </div>

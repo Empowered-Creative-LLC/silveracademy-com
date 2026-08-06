@@ -187,7 +187,7 @@ import {
                 <div class="inline-block bg-slate-50 p-8 rounded-xl">
                     <p class="font-bold text-lg text-slate-900">Office of Development</p>
                     <p class="text-brand-600 mb-2"><a href="mailto:development@silveracademypa.org">development@silveracademypa.org</a></p>
-                    <p class="text-brand-600"><a href="tel:717-238-8775">717-238-8775</a></p>
+                    <p class="text-brand-600"><a href="tel:717-769-5870">717-769-5870</a></p>
                 </div>
             </div>
         </section>

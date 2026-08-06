@@ -302,7 +302,7 @@ const testimonials = [
                             <a href="https://calendar.app.google/Y5NrAjA9RooWgwZ98" target="_blank" rel="noopener noreferrer" class="inline-block bg-accent-500 text-white px-10 py-4 rounded font-bold uppercase tracking-wider hover:bg-accent-600 transition-colors shadow-lg hover:shadow-xl">
                                 Schedule a Visit
                             </a>
-                            <a href="https://app.simpletuitionsolutions.org/thesilveracademy/admissions" target="_blank" rel="noopener noreferrer" class="inline-block bg-white text-brand-600 px-10 py-4 rounded font-bold uppercase tracking-wider hover:bg-slate-50 transition-colors shadow-lg border-2 border-brand-200">
+                            <a href="https://app.simpletuitionsolutions.org/register?sc=21760" target="_blank" rel="noopener noreferrer" class="inline-block bg-white text-brand-600 px-10 py-4 rounded font-bold uppercase tracking-wider hover:bg-slate-50 transition-colors shadow-lg border-2 border-brand-200">
                                 Apply Now
                             </a>
                         </div>

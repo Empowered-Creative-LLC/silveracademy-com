@@ -487,7 +487,7 @@ const dismissCampaignPopup = () => {
                             Visit
                         </a>
                         <a
-                            href="https://app.simpletuitionsolutions.org/en/login"
+                            href="https://app.simpletuitionsolutions.org/register?sc=21760"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="px-8 py-3 text-sm font-semibold uppercase tracking-wider text-slate-800 bg-white border-2 border-accent-500 rounded hover:bg-accent-500 hover:text-white transition-colors duration-200"
