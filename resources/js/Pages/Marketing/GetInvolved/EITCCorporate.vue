@@ -216,7 +216,7 @@ const donors = [
                     <div class="p-6 bg-slate-50 rounded-xl">
                         <h3 class="font-serif font-bold text-lg mb-2">Contact Us</h3>
                         <p class="font-medium text-slate-900">Gila Ogle, Head of School</p>
-                        <p class="text-brand-600"><a href="tel:717-238-8775">717-238-8775</a></p>
+                        <p class="text-brand-600"><a href="tel:717-769-5870">717-769-5870</a></p>
                         <p class="text-brand-600"><a href="mailto:gogle@silveracademypa.org">gogle@silveracademypa.org</a></p>
                     </div>
                     <div class="p-6 bg-slate-50 rounded-xl">

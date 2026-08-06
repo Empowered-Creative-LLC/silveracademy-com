@@ -150,7 +150,7 @@ import {
                     <div class="space-y-2">
                         <p class="flex items-center text-brand-600">
                             <span class="font-medium mr-2">Phone:</span>
-                            <a href="tel:717-238-8775" class="hover:text-brand-700">717-238-8775</a>
+                            <a href="tel:717-769-5870" class="hover:text-brand-700">717-769-5870</a>
                         </p>
                         <p class="flex items-center text-brand-600">
                             <span class="font-medium mr-2">Email:</span>

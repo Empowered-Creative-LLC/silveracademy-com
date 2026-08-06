@@ -114,7 +114,7 @@ import {
                     <h3 class="font-bold text-xl text-brand-900 mb-4">For Guidance</h3>
                     <p class="text-slate-700 mb-4">
                         Please contact <strong>Gila Ogle, Head of School</strong>:<br>
-                        <a href="tel:717-238-8775" class="text-brand-600 font-medium hover:underline">717-238-8775</a> | 
+                        <a href="tel:717-769-5870" class="text-brand-600 font-medium hover:underline">717-769-5870</a> | 
                         <a href="mailto:gogle@silveracademypa.org" class="text-brand-600 font-medium hover:underline">gogle@silveracademypa.org</a>
                     </p>
                     <p class="text-sm text-slate-500">
@@ -154,8 +154,8 @@ import {
                         <h3 class="font-bold text-xl text-slate-900 mb-4">By Mail</h3>
                         <div class="text-slate-600 space-y-1">
                             <p class="font-medium text-slate-900">The Silver Academy</p>
-                            <p>2986 N. 2nd Street</p>
-                            <p>Harrisburg, PA 17110</p>
+                            <p>PO Box 60097</p>
+                            <p>Harrisburg, PA 17106</p>
                         </div>
                         <div class="mt-6 flex justify-center">
                             <HomeIcon class="w-12 h-12 text-slate-300" />

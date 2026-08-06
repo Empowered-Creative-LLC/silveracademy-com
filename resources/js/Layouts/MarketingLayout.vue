@@ -17,7 +17,7 @@ const mobileMenuOpen = ref(false);
 
 const utilityNav = computed(() => [
     { name: 'Schedule a Visit', href: 'https://calendar.app.google/Y5NrAjA9RooWgwZ98', external: true },
-    { name: 'Apply', href: 'https://app.simpletuitionsolutions.org/thesilveracademy/admissions', external: true },
+    { name: 'Apply', href: 'https://app.simpletuitionsolutions.org/register?sc=21760', external: true },
     { name: 'Family Portal', href: portalLink.value },
     { name: 'Give', href: 'https://wl.donorperfect.net/weblink/WebLink.aspx?name=E341196&id=36' },
 ]);
@@ -316,12 +316,15 @@ const socialLinks = [
                                     A Values-Driven Preschool thru 8th Grade Jewish Day School
                                 </p>
                                 <p class="mt-3 text-sm text-slate-600">
-                                    2986 N. 2nd Street | South Hall Building | Harrisburg, PA 17110
+                                    Physical: 2637 N. Front St, Harrisburg, PA 17110
+                                </p>
+                                <p class="mt-1 text-sm text-slate-600">
+                                    Mailing: PO Box 60097, Harrisburg, PA 17106
                                 </p>
                                 <p class="mt-1 text-sm text-slate-600">
                                     <a href="mailto:info@silveracademypa.org" class="text-brand-600 hover:text-brand-700 transition-colors">info@silveracademypa.org</a>
                                     <span class="mx-2">|</span>
-                                    <a href="tel:717-238-8775" class="text-brand-600 hover:text-brand-700 transition-colors">717-238-8775</a>
+                                    <a href="tel:717-769-5870" class="text-brand-600 hover:text-brand-700 transition-colors">717-769-5870</a>
                                 </p>
                             </div>
                         </div>
