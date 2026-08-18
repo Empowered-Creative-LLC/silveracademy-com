@@ -40,11 +40,20 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'portal' => [
+                'coming_soon' => (bool) config('portal.coming_soon'),
+                'sandbox_enabled' => (bool) config('portal.sandbox_enabled') && ! app()->environment('production'),
+                'sandbox_password' => ((bool) config('portal.sandbox_enabled') && ! app()->environment('production'))
+                    ? (string) config('portal.sandbox_password', 'Sandbox123!')
+                    : null,
+            ],
             'flash' => [
                 'message' => fn () => $request->session()->get('message'),
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
                 'status' => fn () => $request->session()->get('status'),
+                'sandbox_password' => fn () => $request->session()->get('sandbox_password'),
+                'sandbox_email' => fn () => $request->session()->get('sandbox_email'),
                 'new_student_code_plain' => fn () => $request->session()->get('new_student_code_plain'),
                 'new_student_name' => fn () => $request->session()->get('new_student_name'),
                 'regenerated_code_plain' => fn () => $request->session()->get('regenerated_code_plain'),

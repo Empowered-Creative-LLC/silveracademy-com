@@ -3,14 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Notifications\ParentCodeWelcome;
 use App\Services\ParentCodeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class ParentCodeController extends Controller
 {
@@ -31,7 +26,7 @@ class ParentCodeController extends Controller
         $student = $result['student'];
         $accessCode = $result['access_code'];
 
-        if (!$accessCode->isValid()) {
+        if (! $accessCode->isValid()) {
             return response()->json(['valid' => false]);
         }
 
@@ -42,7 +37,7 @@ class ParentCodeController extends Controller
     }
 
     /**
-     * First-time signup with email + code. Creates account if needed, links to student, sends password email for new accounts.
+     * First-time signup with email + code.
      */
     public function signup(Request $request): JsonResponse
     {
@@ -51,76 +46,24 @@ class ParentCodeController extends Controller
             'code' => 'required|string|max:32',
         ]);
 
-        $email = $request->input('email');
-        $code = $request->input('code');
-
-        $result = ParentCodeService::validateCode($code);
-        if ($result === null) {
+        $result = ParentCodeService::signup($request->input('email'), $request->input('code'));
+        if (! $result['ok']) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Invalid code or this student has reached the maximum number of linked accounts. Contact the school office.',
+                'message' => $result['message'],
             ], 422);
         }
 
-        $student = $result['student'];
-        $accessCode = $result['access_code'];
-
-        if (!$accessCode->isValid()) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Invalid code or this student has reached the maximum number of linked accounts. Contact the school office.',
-            ], 422);
-        }
-
-        $user = User::where('email', $email)->first();
-        $isNewUser = $user === null;
-
-        $sendWelcomeEmail = false;
-        $plainPassword = null;
-
-        DB::transaction(function () use ($email, $student, $accessCode, &$user, &$isNewUser, &$sendWelcomeEmail, &$plainPassword) {
-            if ($user === null) {
-                $plainPassword = Str::password(12);
-                $user = User::create([
-                    'name' => explode('@', $email)[0],
-                    'email' => $email,
-                    'password' => Hash::make($plainPassword),
-                    'role' => User::ROLE_PARENT,
-                    'is_approved' => true,
-                    'approved_at' => now(),
-                    'approved_by' => null,
-                ]);
-                $sendWelcomeEmail = true;
-            } else {
-                if ($user->role !== User::ROLE_PARENT) {
-                    $user->update(['role' => User::ROLE_PARENT]);
-                }
-                if (!$user->isApproved()) {
-                    $plainPassword = Str::password(12);
-                    $user->update([
-                        'password' => Hash::make($plainPassword),
-                        'is_approved' => true,
-                        'approved_at' => now(),
-                        'approved_by' => null,
-                    ]);
-                    $sendWelcomeEmail = true;
-                }
-            }
-
-            if (!$user->children()->where('students.id', $student->id)->exists()) {
-                $user->children()->attach($student->id);
-            }
-        });
-
-        if ($sendWelcomeEmail && $plainPassword !== null) {
-            $user->notify(new ParentCodeWelcome($plainPassword));
-        }
-
-        return response()->json([
+        $payload = [
             'ok' => true,
-            'message' => $isNewUser || $sendWelcomeEmail
-                ? 'Check your email for your password and login link.'
-                : 'Child added successfully.',
-        ]);
+            'message' => $result['message'],
+        ];
+
+        if ($result['password'] !== null) {
+            $payload['sandbox_password'] = $result['password'];
+            $payload['sandbox_email'] = $result['email'];
+        }
+
+        return response()->json($payload);
     }
 }

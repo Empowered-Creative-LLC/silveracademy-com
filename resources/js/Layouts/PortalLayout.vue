@@ -1,6 +1,6 @@
 <script setup>
 import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
-import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { Bars3Icon, BellIcon, XMarkIcon, ArrowRightOnRectangleIcon, EyeIcon } from '@heroicons/vue/24/outline'
 import { Link, router, usePage } from '@inertiajs/vue3'
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 
@@ -62,13 +62,40 @@ const isActualTeacher = computed(() => {
     return user?.role === 'teacher'
 })
 
+const hasLinkedStudents = computed(() => Boolean(user?.has_linked_students))
+const sandboxEnabled = computed(() => Boolean(page.props.portal?.sandbox_enabled))
+
+const canSwitchToParentView = computed(() => {
+    return isSuperAdmin.value || ((isActualAdmin.value || isActualTeacher.value) && hasLinkedStudents.value)
+})
+
+const previewRoleLabels = {
+    admin: 'Admin View',
+    teacher: 'Staff View',
+    parent: 'Parent View',
+}
+
+const previewRoleLabel = computed(() => previewRoleLabels[storedPreviewRole.value] || 'Admin View')
+
+const setPreviewRole = (role) => {
+    if (!previewRoles.includes(role)) {
+        return
+    }
+    storedPreviewRole.value = role
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('portal_preview_role', role)
+        window.dispatchEvent(new CustomEvent('preview-role-changed', { detail: role }))
+    }
+}
+
 // Determine effective role for navigation (respects preview mode)
 const effectiveRole = computed(() => {
-    // If super admin is previewing, use the stored preview role
     if (isSuperAdmin.value && storedPreviewRole.value) {
         return storedPreviewRole.value
     }
-    // Otherwise use actual role
+    if (canSwitchToParentView.value && storedPreviewRole.value === 'parent') {
+        return 'parent'
+    }
     if (user?.role === 'super_admin' || user?.role === 'admin') return 'admin'
     if (user?.role === 'teacher') return 'teacher'
     return 'parent'
@@ -102,6 +129,10 @@ const userNavigation = computed(() => {
     const items = [
         { name: 'Settings', href: '/portal/settings' },
     ]
+
+    if (sandboxEnabled.value && (isSuperAdmin.value || isActualAdmin.value)) {
+        items.push({ name: 'Test Lab', href: '/portal/sandbox' })
+    }
     
     // For super admins in preview mode, pass the preview role to help page
     if (isSuperAdmin.value && storedPreviewRole.value && storedPreviewRole.value !== 'admin') {
@@ -114,7 +145,11 @@ const userNavigation = computed(() => {
 })
 
 const logout = () => {
-    router.post('/logout')
+    router.post('/logout', {}, {
+        onError: () => {
+            window.location.href = '/login'
+        },
+    })
 }
 
 // Get user initials for avatar
@@ -172,7 +207,38 @@ const isActive = (href) => {
                             </template>
                         </div>
                     </div>
-                    <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                    <div class="hidden sm:ml-6 sm:flex sm:items-center sm:gap-3">
+                        <Menu v-if="isSuperAdmin" as="div" class="relative">
+                            <MenuButton class="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-800 hover:bg-brand-100">
+                                <EyeIcon class="size-4" aria-hidden="true" />
+                                {{ previewRoleLabel }}
+                            </MenuButton>
+                            <transition
+                                enter-active-class="transition ease-out duration-100"
+                                enter-from-class="transform opacity-0 scale-95"
+                                enter-to-class="transform opacity-100 scale-100"
+                                leave-active-class="transition ease-in duration-75"
+                                leave-from-class="transform opacity-100 scale-100"
+                                leave-to-class="transform opacity-0 scale-95"
+                            >
+                                <MenuItems class="absolute right-0 z-20 mt-2 w-44 origin-top-right rounded-md bg-white py-1 shadow-lg outline outline-black/5">
+                                    <MenuItem v-for="role in previewRoles" :key="role" v-slot="{ active }">
+                                        <button
+                                            type="button"
+                                            @click="setPreviewRole(role)"
+                                            :class="[
+                                                active ? 'bg-slate-100' : '',
+                                                storedPreviewRole === role ? 'font-semibold text-brand-800' : 'text-slate-700',
+                                                'block w-full px-4 py-2 text-left text-sm'
+                                            ]"
+                                        >
+                                            {{ previewRoleLabels[role] }}
+                                        </button>
+                                    </MenuItem>
+                                </MenuItems>
+                            </transition>
+                        </Menu>
+
                         <button 
                             type="button" 
                             class="relative rounded-full p-1 text-slate-400 hover:text-slate-500 focus:outline-2 focus:outline-offset-2 focus:outline-brand-600 dark:text-slate-400 dark:hover:text-white dark:focus:outline-brand-500"
@@ -180,6 +246,15 @@ const isActive = (href) => {
                             <span class="absolute -inset-1.5"></span>
                             <span class="sr-only">View notifications</span>
                             <BellIcon class="size-6" aria-hidden="true" />
+                        </button>
+
+                        <button
+                            type="button"
+                            @click="logout"
+                            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        >
+                            <ArrowRightOnRectangleIcon class="size-4" aria-hidden="true" />
+                            Sign out
                         </button>
 
                         <!-- Profile dropdown -->
@@ -222,8 +297,8 @@ const isActive = (href) => {
                                         <button
                                             @click="logout"
                                             :class="[
-                                                active ? 'bg-slate-100 outline-hidden dark:bg-slate-700' : '', 
-                                                'block w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300'
+                                                active ? 'bg-red-50 outline-hidden dark:bg-slate-700' : '', 
+                                                'block w-full text-left px-4 py-2 text-sm font-medium text-red-700 dark:text-red-300'
                                             ]"
                                         >
                                             Sign out
@@ -297,6 +372,25 @@ const isActive = (href) => {
                             <span class="sr-only">View notifications</span>
                             <BellIcon class="size-6" aria-hidden="true" />
                         </button>
+                    </div>
+                    <div v-if="isSuperAdmin" class="mt-3 px-4">
+                        <p class="text-xs font-medium uppercase tracking-wide text-slate-400">Preview as</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button
+                                v-for="role in previewRoles"
+                                :key="role"
+                                type="button"
+                                @click="setPreviewRole(role)"
+                                :class="[
+                                    storedPreviewRole === role
+                                        ? 'bg-brand-600 text-white'
+                                        : 'bg-slate-100 text-slate-700',
+                                    'rounded-full px-3 py-1 text-sm font-medium'
+                                ]"
+                            >
+                                {{ previewRoleLabels[role] }}
+                            </button>
+                        </div>
                     </div>
                     <div class="mt-3 space-y-1">
                         <DisclosureButton 

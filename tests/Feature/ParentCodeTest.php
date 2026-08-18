@@ -90,6 +90,44 @@ class ParentCodeTest extends TestCase
         $this->assertTrue($user->children()->where('students.id', $this->student->id)->exists());
     }
 
+    public function test_sandbox_web_signup_flashes_known_password(): void
+    {
+        config(['portal.sandbox_enabled' => true]);
+
+        $result = ParentCodeService::createCodeForStudent($this->student, 5, false);
+        $code = $result['plain_code'];
+
+        $response = $this->from(route('parent.signup'))->post(route('parent.signup.store'), [
+            'email' => 'labparent@example.com',
+            'code' => $code,
+        ]);
+
+        $response->assertRedirect(route('parent.signup', [
+            'created' => 1,
+            'email' => 'labparent@example.com',
+        ]));
+        $response->assertSessionHas('sandbox_password', 'Sandbox123!');
+        $response->assertSessionHas('sandbox_email', 'labparent@example.com');
+
+        $this->assertTrue(
+            \Illuminate\Support\Facades\Hash::check(
+                'Sandbox123!',
+                User::where('email', 'labparent@example.com')->firstOrFail()->password
+            )
+        );
+
+        $this->withHeaders([
+            'X-Inertia' => 'true',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ])->get(route('parent.signup', [
+            'created' => 1,
+            'email' => 'labparent@example.com',
+        ]))
+            ->assertOk()
+            ->assertJsonPath('props.sandboxPassword', 'Sandbox123!')
+            ->assertJsonPath('props.sandboxEmail', 'labparent@example.com');
+    }
+
     public function test_signup_at_cap_returns_error(): void
     {
         $result = ParentCodeService::createCodeForStudent($this->student, 1, false);
@@ -105,14 +143,49 @@ class ParentCodeTest extends TestCase
         $response->assertJson(['ok' => false]);
     }
 
-    public function test_add_child_requires_parent(): void
+    public function test_add_child_rejects_unrelated_user_role(): void
+    {
+        $result = ParentCodeService::createCodeForStudent($this->student, 5, false);
+        $code = $result['plain_code'];
+
+        $user = User::factory()->create(['role' => User::ROLE_USER, 'is_approved' => true]);
+        $response = $this->actingAs($user)->postJson('/portal/parent/add-child', ['code' => $code]);
+        $response->assertForbidden();
+    }
+
+    public function test_add_child_links_student_for_staff_who_are_also_parents(): void
     {
         $result = ParentCodeService::createCodeForStudent($this->student, 5, false);
         $code = $result['plain_code'];
 
         $teacher = User::factory()->create(['role' => User::ROLE_TEACHER, 'is_approved' => true]);
         $response = $this->actingAs($teacher)->postJson('/portal/parent/add-child', ['code' => $code]);
-        $response->assertForbidden();
+        $response->assertOk();
+
+        $teacher->refresh();
+        $this->assertTrue($teacher->children()->where('students.id', $this->student->id)->exists());
+        $this->assertSame(User::ROLE_TEACHER, $teacher->role);
+    }
+
+    public function test_signup_keeps_staff_role_when_existing_teacher_uses_parent_code(): void
+    {
+        $result = ParentCodeService::createCodeForStudent($this->student, 5, false);
+        $code = $result['plain_code'];
+        $teacher = User::factory()->create([
+            'email' => 'teacher@example.com',
+            'role' => User::ROLE_TEACHER,
+            'is_approved' => true,
+        ]);
+
+        $response = $this->postJson('/api/parent-code/signup', [
+            'email' => 'teacher@example.com',
+            'code' => $code,
+        ]);
+        $response->assertOk();
+
+        $teacher->refresh();
+        $this->assertSame(User::ROLE_TEACHER, $teacher->role);
+        $this->assertTrue($teacher->children()->where('students.id', $this->student->id)->exists());
     }
 
     public function test_add_child_links_student_for_parent(): void

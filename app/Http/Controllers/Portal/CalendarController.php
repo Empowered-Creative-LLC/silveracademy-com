@@ -45,13 +45,15 @@ class CalendarController extends Controller
                 $occurrenceIndex = 0;
                 
                 foreach ($occurrences as $occurrence) {
+                    $eastern = Carbon::parse($occurrence)->timezone(config('app.timezone'));
                     $postEvents->push([
                         'id' => 'post-' . $post->id . '-' . $occurrenceIndex,
                         'original_id' => $post->id,
                         'title' => $post->title,
-                        'event_date' => $occurrence->format('Y-m-d\TH:i:s'),
-                        'event_end_date' => $post->event_end_date 
-                            ? $post->event_end_date->format('Y-m-d\TH:i:s') 
+                        'event_date' => $eastern->format('Y-m-d\TH:i:s'),
+                        'event_date_key' => $eastern->format('Y-m-d'),
+                        'event_end_date' => $post->event_end_date
+                            ? $post->event_end_date->copy()->timezone(config('app.timezone'))->format('Y-m-d\TH:i:s')
                             : null,
                         'description' => $post->content,
                         'button_text' => $post->button_text,
@@ -64,13 +66,19 @@ class CalendarController extends Controller
                     $occurrenceIndex++;
                 }
             } else {
-                // Single event
+                $start = $post->event_start_date
+                    ? $post->event_start_date->copy()->timezone(config('app.timezone'))
+                    : null;
+                $end = $post->event_end_date
+                    ? $post->event_end_date->copy()->timezone(config('app.timezone'))
+                    : null;
                 $postEvents->push([
                     'id' => 'post-' . $post->id,
                     'original_id' => $post->id,
                     'title' => $post->title,
-                    'event_date' => $post->event_start_date,
-                    'event_end_date' => $post->event_end_date,
+                    'event_date' => $start?->format('Y-m-d\TH:i:s'),
+                    'event_date_key' => $start?->format('Y-m-d'),
+                    'event_end_date' => $end?->format('Y-m-d\TH:i:s'),
                     'description' => $post->content,
                     'button_text' => $post->button_text,
                     'button_url' => $post->button_url,
@@ -84,11 +92,19 @@ class CalendarController extends Controller
 
         // Merge calendar events with post events
         $events = $calendarEvents->map(function ($event) {
+            $start = $event->event_date
+                ? $event->event_date->copy()->timezone(config('app.timezone'))
+                : null;
+            $end = $event->event_end_date
+                ? $event->event_end_date->copy()->timezone(config('app.timezone'))
+                : null;
+
             return [
                 'id' => $event->id,
                 'title' => $event->title,
-                'event_date' => $event->event_date,
-                'event_end_date' => $event->event_end_date,
+                'event_date' => $start?->format('Y-m-d\TH:i:s'),
+                'event_date_key' => $start?->format('Y-m-d'),
+                'event_end_date' => $end?->format('Y-m-d\TH:i:s'),
                 'description' => $event->description,
                 'recurrence_type' => 'none',
                 'is_recurring' => false,

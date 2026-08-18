@@ -43,6 +43,21 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
+        /*
+        | Isolated portal test lab. Never points at Supabase / production.
+        | Created and reset by `php artisan portal:sandbox`.
+        */
+        'sandbox' => [
+            'driver' => 'sqlite',
+            'database' => env('SANDBOX_DB_DATABASE', database_path('sandbox.sqlite')),
+            'prefix' => '',
+            'foreign_key_constraints' => true,
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
