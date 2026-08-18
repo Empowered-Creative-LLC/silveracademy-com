@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Grade;
 use App\Models\User;
 use App\Notifications\AccountApproved;
+use App\Support\PortalPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -88,7 +88,7 @@ class StaffController extends Controller
         ]);
 
         // Generate password
-        $password = Str::password(12);
+        $password = PortalPassword::generate();
 
         // Build user data (plain password so User model's 'hashed' cast hashes it once)
         $userData = [
@@ -259,7 +259,7 @@ class StaffController extends Controller
         }
 
         // Generate password (plain so User model's 'hashed' cast hashes it once)
-        $password = Str::password(12);
+        $password = PortalPassword::generate();
         $staff->update(['password' => $password]);
 
         // Send welcome email with credentials
@@ -294,7 +294,7 @@ class StaffController extends Controller
 
         foreach ($users as $user) {
             // Generate password (plain so User model's 'hashed' cast hashes it once)
-            $password = Str::password(12);
+            $password = PortalPassword::generate();
             $user->update(['password' => $password]);
 
             // Send welcome email
@@ -330,7 +330,7 @@ class StaffController extends Controller
 
         foreach ($users as $user) {
             // Generate password (plain so User model's 'hashed' cast hashes it once)
-            $password = Str::password(12);
+            $password = PortalPassword::generate();
             $user->update(['password' => $password]);
 
             // Send welcome email

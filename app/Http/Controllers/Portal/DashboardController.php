@@ -65,8 +65,20 @@ class DashboardController extends Controller
         // Get grade-specific news for parents (from teachers) – one message set per grade, based on ALL linked students' grades
         // Admins/Super Admins get ALL grade news for preview purposes
         $gradeNews = collect();
-        $linkedStudentGradeNames = []; // Grade names for the parent's linked children (for UI label)
-        if ($user->isParent()) {
+        $linkedStudentGradeNames = [];
+        if ($user->isAdmin() || $user->isSuperAdmin()) {
+            $gradeNews = Post::with(['targetGrade', 'author'])
+                ->where('type', 'news')
+                ->where('audience', 'grade')
+                ->whereNotNull('published_at')
+                ->where('published_at', '<=', now())
+                ->orderBy('published_at', 'desc')
+                ->take(10)
+                ->get();
+
+            $children = $user->children()->with('grade:id,name')->get();
+            $linkedStudentGradeNames = $children->map(fn ($s) => $s->grade?->name)->filter()->unique()->values()->toArray();
+        } elseif ($user->canViewAsParent()) {
             $children = $user->children()->with('grade:id,name')->get();
             $childrenGradeIds = $children->pluck('grade_id')->unique()->filter()->toArray();
             $linkedStudentGradeNames = $children->map(fn ($s) => $s->grade?->name)->filter()->unique()->values()->toArray();
@@ -82,16 +94,6 @@ class DashboardController extends Controller
                     ->take(10)
                     ->get();
             }
-        } elseif ($user->isAdmin() || $user->isSuperAdmin()) {
-            // Admins see all grade news for preview
-            $gradeNews = Post::with(['targetGrade', 'author'])
-                ->where('type', 'news')
-                ->where('audience', 'grade')
-                ->whereNotNull('published_at')
-                ->where('published_at', '<=', now())
-                ->orderBy('published_at', 'desc')
-                ->take(10)
-                ->get();
         }
 
         // Get teacher's grades for quick action (admins get all grades for preview)

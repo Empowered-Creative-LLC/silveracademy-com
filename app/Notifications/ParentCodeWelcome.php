@@ -74,20 +74,24 @@ class ParentCodeWelcome extends Notification
 
             $email->addContent("text/plain", $content);
 
+            $escapedName = e($notifiable->name);
+            $escapedEmail = e($notifiable->email);
+            $escapedPassword = e($this->password);
+
             $htmlContent = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
                 <div style='background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 30px; text-align: center;'>
                     <h1 style='color: white; margin: 0; font-size: 24px;'>Silver Academy Family Portal</h1>
                 </div>
                 <div style='padding: 30px; background: #ffffff;'>
-                    <h2 style='color: #1e3a5f; margin-top: 0;'>Hello {$notifiable->name}!</h2>
+                    <h2 style='color: #1e3a5f; margin-top: 0;'>Hello {$escapedName}!</h2>
                     <p style='color: #333; font-size: 16px; line-height: 1.6;'>
                         You used a Parent Code to register for the Family Portal.
                     </p>
                     <div style='background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;'>
                         <h3 style='color: #1e3a5f; margin-top: 0; margin-bottom: 15px;'>Your Login Details</h3>
-                        <p style='margin: 8px 0; color: #333;'><strong>Email:</strong> {$notifiable->email}</p>
-                        <p style='margin: 8px 0; color: #333;'><strong>Temporary password:</strong> <code style='background: #e9ecef; padding: 2px 8px; border-radius: 4px;'>{$this->password}</code></p>
+                        <p style='margin: 8px 0; color: #333;'><strong>Email:</strong> {$escapedEmail}</p>
+                        <p style='margin: 8px 0; color: #333;'><strong>Temporary password:</strong> <code style='background: #e9ecef; padding: 2px 8px; border-radius: 4px; font-size: 16px; letter-spacing: 0.03em;'>{$escapedPassword}</code></p>
                     </div>
                     <div style='text-align: center; margin: 30px 0;'>
                         <a href='{$loginUrl}' style='display: inline-block; background: #f5a623; color: #1e3a5f; text-decoration: none; padding: 14px 30px; border-radius: 6px; font-weight: bold; font-size: 16px;'>Log In to Portal</a>

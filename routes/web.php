@@ -22,6 +22,7 @@ use App\Http\Controllers\Portal\Admin\LunchMenuImportController;
 use App\Http\Controllers\Portal\Admin\StudentCodeController;
 use App\Http\Controllers\Portal\Admin\StudentCodeEmailController;
 use App\Http\Controllers\Portal\AddChildController;
+use App\Http\Controllers\Portal\SandboxController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -79,6 +80,8 @@ Route::get('/events/{post:slug}', [EventController::class, 'show'])->name('event
 
 Route::middleware(['auth', 'approved'])->prefix('portal')->name('portal.')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/session/ping', fn () => response()->noContent())->name('session.ping');
+    Route::get('/sandbox', [SandboxController::class, 'index'])->name('sandbox');
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');

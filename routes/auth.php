@@ -27,6 +27,10 @@ Route::middleware('guest')->group(function () {
     Route::get('parent/signup', [\App\Http\Controllers\Auth\ParentSignupController::class, 'create'])
         ->name('parent.signup');
 
+    Route::post('parent/signup', [\App\Http\Controllers\Auth\ParentSignupController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('parent.signup.store');
+
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 

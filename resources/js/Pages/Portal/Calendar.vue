@@ -9,8 +9,8 @@ import {
     ClockIcon,
     EllipsisHorizontalIcon,
 } from '@heroicons/vue/20/solid';
-import { CalendarIcon, XMarkIcon, PencilIcon, TrashIcon, PlusIcon, ArrowUpTrayIcon, EyeIcon } from '@heroicons/vue/24/outline';
-import { ref, computed, watch } from 'vue';
+import { CalendarIcon, XMarkIcon, PencilIcon, TrashIcon, PlusIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
     events: {
@@ -50,7 +50,6 @@ const previewRole = ref(getStoredPreviewRole());
 const isSuperAdmin = computed(() => props.user?.role === 'super_admin');
 const isActualAdmin = computed(() => props.user?.role === 'admin' || props.user?.role === 'super_admin');
 
-// Effective admin status based on preview role
 const isAdmin = computed(() => {
     if (isSuperAdmin.value) {
         return previewRole.value === 'admin';
@@ -58,25 +57,18 @@ const isAdmin = computed(() => {
     return isActualAdmin.value;
 });
 
-const togglePreviewRole = () => {
-    const currentIndex = previewRoles.indexOf(previewRole.value);
-    const nextIndex = (currentIndex + 1) % previewRoles.length;
-    previewRole.value = previewRoles[nextIndex];
-    
-    // Save to localStorage and notify other components
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('portal_preview_role', previewRole.value);
-        window.dispatchEvent(new CustomEvent('preview-role-changed', { detail: previewRole.value }));
+const onPreviewRoleChanged = (event) => {
+    if (event.detail && previewRoles.includes(event.detail)) {
+        previewRole.value = event.detail;
     }
 };
 
-const previewRoleLabel = computed(() => {
-    const labels = {
-        'admin': 'Admin View',
-        'teacher': 'Staff View',
-        'parent': 'Parent View'
-    };
-    return labels[previewRole.value];
+onMounted(() => {
+    window.addEventListener('preview-role-changed', onPreviewRoleChanged);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('preview-role-changed', onPreviewRoleChanged);
 });
 
 // View toggle state: 'events', 'lunch', or 'both'
@@ -104,6 +96,7 @@ const previousMonth = () => {
     } else {
         currentMonth.value--;
     }
+    selectedDate.value = formatDate(new Date(currentYear.value, currentMonth.value, 1));
 };
 
 const nextMonth = () => {
@@ -113,11 +106,13 @@ const nextMonth = () => {
     } else {
         currentMonth.value++;
     }
+    selectedDate.value = formatDate(new Date(currentYear.value, currentMonth.value, 1));
 };
 
 const goToToday = () => {
     currentMonth.value = today.getMonth();
     currentYear.value = today.getFullYear();
+    selectedDate.value = formatDate(today);
 };
 
 // Generate calendar days
@@ -177,9 +172,8 @@ const formatDate = (date) => {
 const getEventsForDate = (dateStr) => {
     const dayEvents = [];
     
-    // Add calendar events
     props.events.forEach(event => {
-        const eventDate = event.event_date?.split('T')[0];
+        const eventDate = event.event_date_key || eventDateKey(event.event_date);
         if (eventDate === dateStr) {
             dayEvents.push({
                 id: `event-${event.id}`,
@@ -199,6 +193,16 @@ const getEventsForDate = (dateStr) => {
     });
     
     return dayEvents;
+};
+
+const eventDateKey = (datetime) => {
+    if (!datetime) return '';
+    const raw = String(datetime);
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) {
+        return raw.split('T')[0];
+    }
+    return date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 };
 
 // Get lunch menu for a specific date
@@ -484,21 +488,7 @@ const getFilteredItemsForDay = (day) => {
 
     <PortalLayout>
         <template #header>
-            <div class="flex items-center justify-between">
-                <span>Calendar</span>
-                
-                <!-- Role Preview Toggle for Super Admin -->
-                <div v-if="isSuperAdmin" class="flex items-center gap-3">
-                    <span class="text-sm text-slate-500 font-normal">Preview as:</span>
-                    <button
-                        @click="togglePreviewRole"
-                        class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
-                    >
-                        <EyeIcon class="w-4 h-4 mr-2 text-slate-500" />
-                        {{ previewRoleLabel }}
-                    </button>
-                </div>
-            </div>
+            <span>Calendar</span>
         </template>
         
         <div class="lg:flex lg:h-full lg:flex-col">

@@ -10,8 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+use App\Support\PortalPassword;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -52,6 +51,15 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+    ];
+
+    /**
+     * Extra values included when the user is serialized to the frontend.
+     *
+     * @var list<string>
+     */
+    protected $appends = [
+        'has_linked_students',
     ];
 
     /**
@@ -97,14 +105,13 @@ class User extends Authenticatable
      */
     public function approve(User $approver): string
     {
-        // Generate a secure random password
-        $password = Str::password(12);
+        $password = PortalPassword::generate();
 
         $this->update([
             'is_approved' => true,
             'approved_at' => now(),
             'approved_by' => $approver->id,
-            'password' => Hash::make($password),
+            'password' => $password,
         ]);
 
         return $password;
@@ -215,6 +222,39 @@ class User extends Authenticatable
     public function isParent(): bool
     {
         return $this->role === self::ROLE_PARENT;
+    }
+
+    /**
+     * Staff, admins, and super admins.
+     */
+    public function isStaff(): bool
+    {
+        return in_array($this->role, [self::ROLE_TEACHER, self::ROLE_ADMIN, self::ROLE_SUPER_ADMIN], true);
+    }
+
+    /**
+     * Whether this account has at least one linked student.
+     */
+    public function hasLinkedStudents(): bool
+    {
+        if ($this->relationLoaded('children')) {
+            return $this->children->isNotEmpty();
+        }
+
+        return $this->children()->exists();
+    }
+
+    public function getHasLinkedStudentsAttribute(): bool
+    {
+        return $this->hasLinkedStudents();
+    }
+
+    /**
+     * Parents, or staff who also have children linked (dual-role testers).
+     */
+    public function canViewAsParent(): bool
+    {
+        return $this->isParent() || $this->hasLinkedStudents();
     }
 
     /**

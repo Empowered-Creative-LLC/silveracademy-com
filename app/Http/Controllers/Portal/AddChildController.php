@@ -11,13 +11,13 @@ class AddChildController extends Controller
 {
     /**
      * Add a child to the current account using a parent code.
-     * Parents can link their children; super_admin can link for testing the full flow.
+     * Parents and staff (including staff who are also parents) can link children.
      */
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->isParent() && !$user->isSuperAdmin()) {
-            abort(403, 'Only parent accounts can link students.');
+        if (!$user->isParent() && !$user->isStaff()) {
+            abort(403, 'Only parent or staff accounts can link students.');
         }
 
         $request->validate([

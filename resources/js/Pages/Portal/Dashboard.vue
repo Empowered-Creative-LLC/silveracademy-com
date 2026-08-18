@@ -13,7 +13,7 @@ import {
     NewspaperIcon,
     PencilSquareIcon,
 } from '@heroicons/vue/24/outline';
-import { ref, computed, provide, watch } from 'vue';
+import { ref, computed, provide, watch, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
     user: Object,
@@ -34,39 +34,67 @@ const props = defineProps({
 
 const previewRoles = ['admin', 'teacher', 'parent'];
 
+const defaultPreviewRole = () => {
+    if (props.user?.role === 'teacher') return 'teacher';
+    if (props.user?.role === 'parent') return 'parent';
+    return 'admin';
+};
+
 // Load preview role from localStorage (persists across page navigations)
 const getStoredPreviewRole = () => {
+    const fallback = defaultPreviewRole();
     if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('portal_preview_role');
         if (stored && previewRoles.includes(stored)) {
-            return stored;
+            if (props.user?.role === 'super_admin') {
+                return stored;
+            }
+            if (stored === 'parent') {
+                return 'parent';
+            }
         }
     }
-    return 'admin';
+    return fallback;
 };
 
 const previewRole = ref(getStoredPreviewRole());
 
 const isSuperAdmin = computed(() => props.user?.role === 'super_admin');
 const isAdmin = computed(() => props.user?.role === 'admin' || props.user?.role === 'super_admin');
+const isTeacher = computed(() => props.user?.role === 'teacher');
+const hasLinkedStudents = computed(() => Boolean(props.user?.has_linked_students));
+const canSwitchPortalView = computed(() => isSuperAdmin.value || ((isAdmin.value || isTeacher.value) && hasLinkedStudents.value));
 
-// Save preview role to localStorage when it changes and notify other components
 watch(previewRole, (newRole) => {
-    if (typeof window !== 'undefined' && isSuperAdmin.value) {
+    if (typeof window !== 'undefined' && canSwitchPortalView.value) {
         localStorage.setItem('portal_preview_role', newRole);
-        // Dispatch custom event so layout can react immediately
         window.dispatchEvent(new CustomEvent('preview-role-changed', { detail: newRole }));
     }
 });
 
-// Provide preview role to child components (like PortalLayout)
+const onPreviewRoleChanged = (event) => {
+    if (event.detail && previewRoles.includes(event.detail)) {
+        previewRole.value = event.detail;
+    }
+};
+
+onMounted(() => {
+    window.addEventListener('preview-role-changed', onPreviewRoleChanged);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('preview-role-changed', onPreviewRoleChanged);
+});
+
 provide('previewRole', previewRole);
 provide('isSuperAdmin', isSuperAdmin);
 
-// Determine which view to show
 const showAdminView = computed(() => {
     if (isSuperAdmin.value) {
         return previewRole.value === 'admin';
+    }
+    if (hasLinkedStudents.value && previewRole.value === 'parent') {
+        return false;
     }
     return isAdmin.value;
 });
@@ -75,6 +103,9 @@ const showTeacherView = computed(() => {
     if (isSuperAdmin.value) {
         return previewRole.value === 'teacher';
     }
+    if (hasLinkedStudents.value && previewRole.value === 'parent') {
+        return false;
+    }
     return props.user?.role === 'teacher';
 });
 
@@ -82,13 +113,19 @@ const showParentView = computed(() => {
     if (isSuperAdmin.value) {
         return previewRole.value === 'parent';
     }
+    if ((isAdmin.value || isTeacher.value) && hasLinkedStudents.value) {
+        return previewRole.value === 'parent';
+    }
     return props.user?.role === 'parent';
 });
 
 const toggleRole = () => {
-    const currentIndex = previewRoles.indexOf(previewRole.value);
-    const nextIndex = (currentIndex + 1) % previewRoles.length;
-    previewRole.value = previewRoles[nextIndex];
+    if (isSuperAdmin.value) {
+        const currentIndex = previewRoles.indexOf(previewRole.value);
+        previewRole.value = previewRoles[(currentIndex + 1) % previewRoles.length];
+        return;
+    }
+    previewRole.value = previewRole.value === 'parent' ? defaultPreviewRole() : 'parent';
 };
 
 const previewRoleLabel = computed(() => {
@@ -131,9 +168,9 @@ const formatWeekDate = (dateStr) => {
             <div class="flex items-center justify-between">
                 <span>Welcome back, {{ user?.name || 'User' }}!</span>
                 
-                <!-- Role Toggle for Super Admin -->
-                <div v-if="isSuperAdmin" class="flex items-center gap-3">
-                    <span class="text-sm text-slate-500 font-normal">Preview as:</span>
+                <!-- Role toggle for staff/admin who are also parents (super admin uses the header dropdown) -->
+                <div v-if="canSwitchPortalView && !isSuperAdmin" class="flex items-center gap-3">
+                    <span class="text-sm text-slate-500 font-normal">{{ isSuperAdmin ? 'Preview as:' : 'View as:' }}</span>
                     <button
                         @click="toggleRole"
                         class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"

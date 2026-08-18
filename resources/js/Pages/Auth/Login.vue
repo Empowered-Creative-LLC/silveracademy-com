@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { ref, computed } from 'vue';
 
@@ -7,6 +7,9 @@ const props = defineProps({
     canResetPassword: Boolean,
     status: String,
 });
+
+const page = usePage();
+const portalComingSoon = computed(() => page.props.portal?.coming_soon);
 
 const form = useForm({
     email: '',
@@ -44,8 +47,8 @@ const submit = () => {
             <p class="text-slate-600 mt-2">Sign in to access your parent portal</p>
         </div>
 
-        <!-- Coming Soon Notice -->
-        <div class="mb-6 p-4 bg-accent-50 border border-accent-200 rounded-lg">
+        <!-- Coming Soon Notice (optional, off while the portal is in testing) -->
+        <div v-if="portalComingSoon" class="mb-6 p-4 bg-accent-50 border border-accent-200 rounded-lg">
             <div class="flex items-start gap-3">
                 <svg class="w-5 h-5 text-accent-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
