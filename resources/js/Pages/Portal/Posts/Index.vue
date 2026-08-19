@@ -1,12 +1,16 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     posts: Object,
     filters: Object,
 });
+
+const page = usePage();
+const successMessage = computed(() => page.props.flash?.success);
+const errorMessage = computed(() => page.props.flash?.error);
 
 const confirmingDelete = ref(null);
 const deleteConfirmText = ref('');
@@ -49,6 +53,13 @@ const formatDate = (date) => {
         <template #header>News & Events</template>
         
         <div class="space-y-6">
+            <div v-if="successMessage" class="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                {{ successMessage }}
+            </div>
+            <div v-if="errorMessage" class="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                {{ errorMessage }}
+            </div>
+
             <!-- Header -->
             <div class="flex items-center justify-between">
                 <div>

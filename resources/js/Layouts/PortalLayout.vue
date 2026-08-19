@@ -115,8 +115,8 @@ const navigation = computed(() => {
         items.push({ name: 'Staff Directory', href: '/portal/admin/staff-directory' })
         items.push({ name: 'Grades', href: '/portal/admin/grades' })
     } else if (effectiveRole.value === 'teacher') {
-        // Teachers see link to public News & Events page (view only)
-        items.push({ name: 'News & Events', href: '/news-events', external: true })
+        // Staff should land on the portal Events Calendar experience.
+        items.push({ name: 'News & Events', href: '/portal/calendar?view=events' })
     }
     // Parents just see Dashboard, Calendar, Settings
 

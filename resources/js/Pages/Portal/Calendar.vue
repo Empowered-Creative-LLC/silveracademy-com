@@ -65,6 +65,13 @@ const onPreviewRoleChanged = (event) => {
 
 onMounted(() => {
     window.addEventListener('preview-role-changed', onPreviewRoleChanged);
+    if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const mode = params.get('displayMode') || params.get('eventsView');
+        if (mode === 'calendar' || mode === 'list') {
+            displayMode.value = mode;
+        }
+    }
 });
 
 onUnmounted(() => {
@@ -73,6 +80,8 @@ onUnmounted(() => {
 
 // View toggle state: 'events', 'lunch', or 'both'
 const currentView = ref(props.defaultView);
+// Calendar vs list layout — available to all portal roles and content views
+const displayMode = ref('calendar');
 
 // Current date tracking
 const today = new Date();
@@ -166,6 +175,19 @@ const formatDate = (date) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+};
+
+const parseDateKeyParts = (dateKey) => {
+    if (!dateKey) return null;
+    const [year, month, day] = String(dateKey).split('-').map(Number);
+    if (!year || !month || !day) return null;
+    return { year, month, day };
+};
+
+const dateKeyMatchesMonth = (dateKey, month, year) => {
+    const parts = parseDateKeyParts(dateKey);
+    if (!parts) return false;
+    return parts.year === year && parts.month === month + 1;
 };
 
 // Get events for a specific date
@@ -481,6 +503,72 @@ const getFilteredItemsForDay = (day) => {
     
     return items;
 };
+
+// List-mode dataset (chronological by selected month/year, respects active content view).
+const listItemsForCurrentMonth = computed(() => {
+    const month = currentMonth.value;
+    const year = currentYear.value;
+    const items = [];
+
+    if (currentView.value === 'events' || currentView.value === 'both') {
+        props.events.forEach((event) => {
+            const dateKey = event.event_date_key || eventDateKey(event.event_date);
+            if (!dateKeyMatchesMonth(dateKey, month, year)) return;
+
+            items.push({
+                id: `event-${event.id}`,
+                sortDate: dateKey,
+                itemType: 'event',
+                title: event.title,
+                datetime: event.event_date,
+                description: event.description || '',
+                buttonText: event.button_text || '',
+                buttonUrl: event.button_url || '',
+                endDate: event.event_end_date,
+                isRecurring: event.is_recurring || false,
+                recurrenceType: event.recurrence_type || 'none',
+                isSchoolClosure: event.is_school_closure || false,
+            });
+        });
+    }
+
+    if (currentView.value === 'lunch' || currentView.value === 'both') {
+        props.lunchMenus.forEach((menu) => {
+            if (!dateKeyMatchesMonth(menu.menu_date, month, year)) return;
+
+            items.push({
+                id: `lunch-${menu.id}`,
+                sortDate: menu.menu_date,
+                itemType: 'lunch',
+                title: getMenuFirstLine(menu.content),
+                datetime: menu.menu_date,
+                description: menu.content || '',
+                menuId: menu.id,
+            });
+        });
+    }
+
+    return items.sort((a, b) => {
+        const aParts = parseDateKeyParts(a.sortDate);
+        const bParts = parseDateKeyParts(b.sortDate);
+        if (!aParts || !bParts) return 0;
+        if (aParts.year !== bParts.year) return aParts.year - bParts.year;
+        if (aParts.month !== bParts.month) return aParts.month - bParts.month;
+        if (aParts.day !== bParts.day) return aParts.day - bParts.day;
+        return String(a.sortDate).localeCompare(String(b.sortDate));
+    });
+});
+
+const listEmptyMessage = computed(() => {
+    switch (currentView.value) {
+        case 'events':
+            return 'No events scheduled for this month.';
+        case 'lunch':
+            return 'No lunch menus for this month.';
+        default:
+            return 'Nothing scheduled for this month.';
+    }
+});
 </script>
 
 <template>
@@ -536,6 +624,18 @@ const getFilteredItemsForDay = (day) => {
                         >
                             Both
                         </button>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <label for="calendar-display-mode" class="text-sm font-medium text-slate-600">View</label>
+                        <select
+                            id="calendar-display-mode"
+                            v-model="displayMode"
+                            class="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        >
+                            <option value="calendar">Calendar View</option>
+                            <option value="list">List View</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -657,7 +757,7 @@ const getFilteredItemsForDay = (day) => {
                 </div>
             </header>
             
-            <div class="shadow-sm ring-1 ring-black/5 lg:flex lg:flex-auto lg:flex-col rounded-b-xl overflow-hidden">
+            <div v-if="displayMode === 'calendar'" class="shadow-sm ring-1 ring-black/5 lg:flex lg:flex-auto lg:flex-col rounded-b-xl overflow-hidden">
                 <!-- Day headers -->
                 <div class="grid grid-cols-7 gap-px border-b border-slate-300 bg-slate-200 text-center text-xs/6 font-semibold text-slate-700 lg:flex-none">
                     <div class="flex justify-center bg-white py-2">
@@ -851,9 +951,72 @@ const getFilteredItemsForDay = (day) => {
                     </div>
                 </div>
             </div>
+
+            <!-- List View -->
+            <div v-else class="bg-white rounded-b-xl shadow-sm ring-1 ring-black/5 overflow-hidden">
+                <div class="px-6 py-3 border-b border-slate-100 bg-slate-50">
+                    <h2 class="text-sm font-semibold text-slate-900">{{ currentMonthName }}</h2>
+                </div>
+                <div v-if="listItemsForCurrentMonth.length > 0" class="divide-y divide-slate-100">
+                    <div
+                        v-for="item in listItemsForCurrentMonth"
+                        :key="item.id"
+                        class="px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                        @click="openEventDetails({
+                            id: item.id,
+                            name: item.title,
+                            datetime: item.datetime,
+                            time: item.itemType === 'event' ? formatTime(item.datetime) : '',
+                            type: item.itemType,
+                            description: item.description,
+                            buttonText: item.buttonText || '',
+                            buttonUrl: item.buttonUrl || '',
+                            endDate: item.endDate,
+                            isRecurring: item.isRecurring || false,
+                            recurrenceType: item.recurrenceType || 'none',
+                            isSchoolClosure: item.isSchoolClosure || false,
+                            menuId: item.menuId,
+                        })"
+                    >
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        v-if="item.itemType === 'lunch'"
+                                        class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
+                                    >
+                                        Lunch Menu
+                                    </span>
+                                    <span
+                                        v-else-if="item.isSchoolClosure"
+                                        class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
+                                    >
+                                        School Closure
+                                    </span>
+                                    <p :class="[
+                                        'font-medium truncate',
+                                        item.itemType === 'lunch' ? 'text-amber-700' : item.isSchoolClosure ? 'text-red-700' : 'text-slate-900'
+                                    ]">
+                                        {{ item.title }}
+                                    </p>
+                                </div>
+                                <p class="text-sm text-slate-600">
+                                    {{ formatFullDate(item.datetime) }}
+                                    <span v-if="item.itemType === 'event' && item.datetime">at {{ formatTime(item.datetime) }}</span>
+                                </p>
+                            </div>
+                            <span class="text-xs text-brand-700 bg-brand-50 px-2 py-1 rounded-md">View</span>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="px-6 py-12 text-center">
+                    <CalendarIcon class="mx-auto h-12 w-12 text-slate-300" />
+                    <p class="mt-2 text-sm text-slate-500">{{ listEmptyMessage }}</p>
+                </div>
+            </div>
             
-            <!-- Mobile event list -->
-            <div v-if="selectedDayEvents.length > 0" class="relative px-4 py-10 sm:px-6 lg:hidden">
+            <!-- Mobile event list (calendar view only) -->
+            <div v-if="displayMode === 'calendar' && selectedDayEvents.length > 0" class="relative px-4 py-10 sm:px-6 lg:hidden">
                 <ol class="divide-y divide-slate-100 overflow-hidden rounded-lg bg-white text-sm shadow-sm outline outline-1 outline-black/5">
                     <li 
                         v-for="item in selectedDayEvents" 
@@ -885,13 +1048,13 @@ const getFilteredItemsForDay = (day) => {
                 </ol>
             </div>
             
-            <!-- Empty state for mobile -->
-            <div v-else class="px-4 py-10 sm:px-6 lg:hidden">
+            <!-- Empty state for mobile (calendar view only) -->
+            <div v-else-if="displayMode === 'calendar'" class="px-4 py-10 sm:px-6 lg:hidden">
                 <p class="text-center text-sm text-slate-500">No items on selected day</p>
             </div>
             
-            <!-- Weekly Items List -->
-            <div class="mt-8 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <!-- Weekly Items List (calendar view only — list view already shows the full month) -->
+            <div v-if="displayMode === 'calendar'" class="mt-8 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
                     <div class="flex items-center justify-between">
                         <h2 class="text-lg font-serif font-semibold text-slate-900">{{ weekSectionTitle }}</h2>

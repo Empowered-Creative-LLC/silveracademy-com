@@ -120,7 +120,8 @@ class PostController extends Controller
             'button_url' => $validated['button_url'] ?? null,
             'recurrence_type' => $validated['recurrence_type'] ?? 'none',
             'recurrence_end_date' => $validated['recurrence_end_date'] ?? null,
-            'published_at' => $request->boolean('publish_now') ? now()->utc() : null,
+            // Store in app timezone so all `published_at <= now()` queries match correctly.
+            'published_at' => $request->boolean('publish_now') ? now() : null,
         ]);
 
         return redirect()->route('portal.posts.index')
@@ -273,7 +274,8 @@ class PostController extends Controller
     public function togglePublish(Post $post)
     {
         $post->update([
-            'published_at' => $post->published_at ? null : now()->utc(),
+            // Store in app timezone so all `published_at <= now()` queries match correctly.
+            'published_at' => $post->published_at ? null : now(),
         ]);
 
         $status = $post->published_at ? 'published' : 'unpublished';

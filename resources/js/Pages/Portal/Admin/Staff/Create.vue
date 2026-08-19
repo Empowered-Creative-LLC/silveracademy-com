@@ -32,6 +32,14 @@ const toggleGrade = (gradeId) => {
         form.grade_ids.splice(index, 1);
     }
 };
+
+const selectAllGrades = () => {
+    form.grade_ids = props.grades.map((grade) => grade.id);
+};
+
+const clearAllGrades = () => {
+    form.grade_ids = [];
+};
 </script>
 
 <template>
@@ -176,9 +184,28 @@ const toggleGrade = (gradeId) => {
 
                 <!-- Grade Assignment -->
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">
-                        Assign to Grade Levels
-                    </label>
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <label class="block text-sm font-medium text-slate-700">
+                            Assign to Grade Levels
+                        </label>
+                        <div v-if="grades && grades.length > 0" class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="selectAllGrades"
+                                class="text-xs font-medium text-brand-700 hover:text-brand-800"
+                            >
+                                Select all
+                            </button>
+                            <span class="text-slate-300">|</span>
+                            <button
+                                type="button"
+                                @click="clearAllGrades"
+                                class="text-xs font-medium text-slate-600 hover:text-slate-800"
+                            >
+                                Clear all
+                            </button>
+                        </div>
+                    </div>
                     <div v-if="grades && grades.length > 0" class="border border-slate-200 rounded-lg divide-y divide-slate-200 max-h-64 overflow-y-auto">
                         <label 
                             v-for="grade in grades" 
