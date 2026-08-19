@@ -177,8 +177,8 @@ const activeStaffAnnouncements = computed(() =>
 
     <PortalLayout>
         <template #header>
-            <div class="flex items-center justify-between">
-                <span>Welcome back, {{ user?.name || 'User' }}!</span>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span class="break-words">Welcome back, {{ user?.name || 'User' }}!</span>
                 
                 <!-- Role toggle for staff/admin who are also parents (super admin uses the header dropdown) -->
                 <div v-if="canSwitchPortalView && !isSuperAdmin" class="flex items-center gap-3">

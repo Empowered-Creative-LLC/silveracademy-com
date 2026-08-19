@@ -163,11 +163,11 @@ const isActive = (href) => {
 </script>
 
 <template>
-    <div class="min-h-full bg-slate-50">
+    <div class="min-h-full overflow-x-hidden bg-slate-50">
         <Disclosure as="nav" class="border-b border-slate-200 bg-white" v-slot="{ open }">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div class="flex h-16 justify-between">
-                    <div class="flex">
+                <div class="flex h-16 justify-between gap-3">
+                    <div class="flex min-w-0">
                         <div class="flex shrink-0 items-center">
                             <Link href="/">
                                 <img 
@@ -418,15 +418,15 @@ const isActive = (href) => {
             </DisclosurePanel>
         </Disclosure>
 
-        <div class="py-10 bg-white min-h-screen">
+        <div class="overflow-x-hidden bg-white min-h-screen">
             <header v-if="$slots.header">
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <h1 class="text-3xl font-serif font-bold tracking-tight text-slate-900">
+                    <h1 class="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-slate-900 break-words">
                         <slot name="header" />
                     </h1>
                 </div>
             </header>
-            <main>
+            <main class="overflow-x-hidden">
                 <div v-if="showSessionExpiredBanner" class="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
                     <div class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
                         Your session expired. Please try your action again.

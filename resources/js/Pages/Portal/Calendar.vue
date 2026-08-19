@@ -579,13 +579,14 @@ const listEmptyMessage = computed(() => {
             <span>Calendar</span>
         </template>
         
-        <div class="lg:flex lg:h-full lg:flex-col">
-            <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-4 lg:flex-none rounded-t-xl">
-                <div class="flex items-center gap-4">
+        <div class="max-w-full overflow-x-hidden lg:flex lg:h-full lg:flex-col">
+            <header class="flex flex-col gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:flex-none rounded-t-xl">
+                <div class="flex w-full flex-col gap-3">
                     <h1 class="text-base font-semibold text-slate-900">
                         <time :datetime="`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`">{{ currentMonthName }}</time>
                     </h1>
                     
+                    <div class="flex flex-wrap items-center gap-2">
                     <!-- View Toggle -->
                     <div class="flex rounded-lg bg-slate-100 p-1">
                         <button
@@ -637,9 +638,10 @@ const listEmptyMessage = computed(() => {
                             <option value="list">List View</option>
                         </select>
                     </div>
+                    </div>
                 </div>
                 
-                <div class="flex items-center gap-4">
+                <div class="flex flex-wrap items-center gap-3">
                     <div class="relative flex items-center rounded-md bg-white shadow-sm outline outline-1 -outline-offset-1 outline-slate-300 md:items-stretch">
                         <button 
                             type="button" 

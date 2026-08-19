@@ -124,11 +124,11 @@ const downloadCredentials = () => {
             </div>
 
             <!-- Header Actions -->
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="text-slate-600">Manage staff members, assign roles, and grade level assignments.</p>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <a 
                         href="/portal/admin/staff/template"
                         class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
@@ -298,7 +298,8 @@ const downloadCredentials = () => {
                     </div>
                 </div>
 
-                <table v-else class="min-w-full divide-y divide-slate-200">
+                <div v-else class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -433,6 +434,7 @@ const downloadCredentials = () => {
                         </tr>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </PortalLayout>
