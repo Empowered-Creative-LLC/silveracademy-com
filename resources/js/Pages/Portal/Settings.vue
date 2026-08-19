@@ -215,7 +215,7 @@ const roleLabel = computed(() => {
         <template #header>Account Settings</template>
 
         <div
-            class="mx-auto grid grid-cols-1 gap-8"
+            class="mx-auto grid min-w-0 max-w-full grid-cols-1 gap-8"
             :class="showLinkedStudents ? 'max-w-6xl lg:grid-cols-[65fr_35fr]' : 'max-w-3xl'"
         >
             <!-- Left column (65%): flash messages, avatar, profile, password, account info -->
@@ -240,10 +240,10 @@ const roleLabel = computed(() => {
                     <h2 class="text-lg font-semibold text-slate-900">Profile Picture</h2>
                     <p class="text-sm text-slate-500 mt-1">Update your profile picture</p>
                 </div>
-                <div class="p-6">
-                    <div class="flex items-center gap-6">
+                <div class="p-4 sm:p-6">
+                    <div class="flex flex-col gap-6 sm:flex-row sm:items-center">
                         <!-- Current Avatar / Preview -->
-                        <div class="relative">
+                        <div class="relative self-center sm:self-auto flex-shrink-0">
                             <div v-if="avatarPreview" class="w-24 h-24 rounded-full overflow-hidden">
                                 <img :src="avatarPreview" alt="Avatar preview" class="w-full h-full object-cover" />
                             </div>
@@ -256,7 +256,7 @@ const roleLabel = computed(() => {
                         </div>
 
                         <!-- Upload Controls -->
-                        <div class="flex-1">
+                        <div class="flex-1 min-w-0 w-full">
                             <input
                                 ref="avatarInput"
                                 type="file"
@@ -265,7 +265,7 @@ const roleLabel = computed(() => {
                                 class="hidden"
                             />
                             
-                            <div v-if="avatarPreview" class="flex items-center gap-3">
+                            <div v-if="avatarPreview" class="flex flex-wrap items-center gap-3">
                                 <button
                                     @click="uploadAvatar"
                                     :disabled="avatarForm.processing"
@@ -280,7 +280,7 @@ const roleLabel = computed(() => {
                                     Cancel
                                 </button>
                             </div>
-                            <div v-else class="flex items-center gap-3">
+                            <div v-else class="flex flex-wrap items-center gap-3">
                                 <button
                                     @click="selectAvatar"
                                     class="inline-flex items-center px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"

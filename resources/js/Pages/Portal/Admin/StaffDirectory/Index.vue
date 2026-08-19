@@ -37,7 +37,7 @@ const cancelDelete = () => {
     <PortalLayout>
         <template #header>Staff Directory</template>
 
-        <div class="space-y-6">
+        <div class="min-w-0 max-w-full space-y-6">
             <p class="text-slate-600">
                 This list appears on the public <a href="/staff" target="_blank" rel="noopener" class="text-brand-600 hover:underline">Staff page</a>. Data is stored in the database; add or edit entries here.
             </p>
@@ -63,7 +63,7 @@ const cancelDelete = () => {
 
             <!-- Table -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <table class="min-w-full divide-y divide-slate-200">
+                <table class="hidden md:table min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Photo</th>
@@ -110,6 +110,49 @@ const cancelDelete = () => {
                         </tr>
                     </tbody>
                 </table>
+
+                <!-- Mobile cards -->
+                <div v-if="entries.length > 0" class="md:hidden divide-y divide-slate-200">
+                    <div v-for="entry in entries" :key="'mobile-' + entry.id" class="p-4 space-y-3">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <img
+                                v-if="entry.photo"
+                                :src="entry.photo"
+                                :alt="entry.name"
+                                class="h-12 w-12 flex-shrink-0 rounded-full object-cover"
+                            />
+                            <div v-else class="h-12 w-12 flex-shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-sm">
+                                —
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-medium text-slate-900 break-words">{{ entry.name }}</div>
+                                <div class="text-sm text-slate-600 break-words">{{ entry.title }}</div>
+                                <div class="text-sm text-slate-500 break-words">{{ entry.department }}</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <Link
+                                :href="`/portal/admin/staff-directory/${entry.id}/edit`"
+                                class="inline-flex items-center gap-1 text-sm text-brand-700 hover:text-brand-800"
+                            >
+                                <PencilIcon class="w-4 h-4" />
+                                Edit
+                            </Link>
+                            <button
+                                type="button"
+                                @click="confirmingDelete = entry.id; deleteConfirmText = ''"
+                                class="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                            >
+                                <TrashIcon class="w-4 h-4" />
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="entries.length === 0" class="px-4 sm:px-6 py-12 text-center text-slate-500 md:hidden">
+                    No entries yet. Run <code class="bg-slate-100 px-1 rounded">php artisan db:seed</code> to seed the staff directory, or add entries above.
+                </div>
             </div>
 
             <!-- Delete confirmation modal -->

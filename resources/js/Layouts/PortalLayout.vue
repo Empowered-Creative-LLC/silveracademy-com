@@ -164,7 +164,7 @@ const isActive = (href) => {
 
 <template>
     <div class="min-h-full overflow-x-hidden bg-slate-50">
-        <Disclosure as="nav" class="border-b border-slate-200 bg-white" v-slot="{ open }">
+        <Disclosure as="nav" class="sticky top-0 z-50 border-b border-slate-200 bg-white" v-slot="{ open }">
             <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 justify-between gap-3">
                     <div class="flex min-w-0">
@@ -318,7 +318,30 @@ const isActive = (href) => {
                 </div>
             </div>
 
-            <DisclosurePanel class="sm:hidden border-t border-slate-200 bg-white">
+            <transition
+                enter-active-class="transition-opacity duration-200 ease-out"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-150 ease-in"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <DisclosureButton
+                    v-if="open"
+                    class="fixed inset-0 top-16 z-40 bg-slate-900/40 sm:hidden"
+                    aria-label="Close menu"
+                />
+            </transition>
+
+            <transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="opacity-0 -translate-y-1"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-1"
+            >
+                <DisclosurePanel class="fixed left-0 right-0 top-16 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-slate-200 bg-white shadow-lg sm:hidden">
                 <div class="border-b border-slate-200 px-4 py-4">
                     <div class="flex items-center">
                         <div class="shrink-0">
@@ -415,11 +438,12 @@ const isActive = (href) => {
                         </button>
                     </DisclosureButton>
                 </div>
-            </DisclosurePanel>
+                </DisclosurePanel>
+            </transition>
         </Disclosure>
 
         <div class="overflow-x-hidden bg-white min-h-screen">
-            <header v-if="$slots.header">
+            <header v-if="$slots.header" class="pt-2.5">
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <h1 class="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-slate-900 break-words">
                         <slot name="header" />
@@ -432,7 +456,7 @@ const isActive = (href) => {
                         Your session expired. Please try your action again.
                     </div>
                 </div>
-                <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-7xl min-w-0 px-4 py-4 sm:px-6 sm:py-8 lg:px-8">
                     <slot />
                 </div>
             </main>

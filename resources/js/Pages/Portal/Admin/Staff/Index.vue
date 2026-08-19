@@ -115,7 +115,7 @@ const downloadCredentials = () => {
     <PortalLayout>
         <template #header>Staff Management</template>
 
-        <div class="space-y-6">
+        <div class="min-w-0 max-w-full space-y-6">
             <div v-if="page.props.flash?.success" class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                 <p class="text-sm font-medium text-emerald-800">{{ page.props.flash.success }}</p>
             </div>
@@ -208,7 +208,7 @@ const downloadCredentials = () => {
 
             <!-- Pending Credentials Alert -->
             <div v-if="hasPendingStaff && !hasCredentials" class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-3">
                         <div class="p-2 bg-amber-100 rounded-lg">
                             <ClockIcon class="w-5 h-5 text-amber-700" />
@@ -225,7 +225,7 @@ const downloadCredentials = () => {
                     <button
                         @click="sendAllPendingWelcomeEmails"
                         :disabled="sendingAllWelcome"
-                        class="inline-flex items-center px-4 py-2 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+                        class="inline-flex w-full sm:w-auto items-center justify-center px-4 py-2 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
                     >
                         <EnvelopeIcon class="w-4 h-4 mr-2" />
                         {{ sendingAllWelcome ? 'Sending...' : 'Send All Welcome Emails' }}
@@ -298,7 +298,7 @@ const downloadCredentials = () => {
                     </div>
                 </div>
 
-                <div v-else class="overflow-x-auto">
+                <div v-else class="hidden md:block overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
@@ -434,6 +434,100 @@ const downloadCredentials = () => {
                         </tr>
                     </tbody>
                 </table>
+                </div>
+
+                <!-- Mobile cards -->
+                <div v-if="staff.length > 0" class="md:hidden divide-y divide-slate-200">
+                    <div v-for="member in staff" :key="'mobile-' + member.id" class="p-4 space-y-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="h-10 w-10 flex-shrink-0 rounded-full bg-brand-100 flex items-center justify-center">
+                                <span class="text-sm font-medium text-brand-700">
+                                    {{ member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) }}
+                                </span>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-medium text-slate-900 break-words">{{ member.name }}</div>
+                                <div class="text-sm text-slate-500 break-all">{{ member.email }}</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span
+                                :class="[
+                                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                                    getRoleBadgeClass(member.role),
+                                ]"
+                            >
+                                {{ member.role_label }}
+                            </span>
+                            <span v-if="member.has_credentials" class="inline-flex items-center gap-1 text-xs text-emerald-600">
+                                <CheckCircleIcon class="w-3.5 h-3.5" /> Credentials sent
+                            </span>
+                            <span v-else class="inline-flex items-center gap-1 text-xs text-amber-600">
+                                <ClockIcon class="w-3.5 h-3.5" /> Pending credentials
+                            </span>
+                        </div>
+                        <div v-if="member.grades && member.grades.length > 0" class="flex flex-wrap gap-1">
+                            <span
+                                v-for="grade in member.grades"
+                                :key="grade.id"
+                                class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-700"
+                            >
+                                {{ grade.name }}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                v-if="!member.has_credentials && member.role !== 'super_admin'"
+                                @click="sendWelcomeEmail(member.id)"
+                                :disabled="sendingWelcome === member.id"
+                                class="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md transition-colors disabled:opacity-50"
+                            >
+                                {{ sendingWelcome === member.id ? 'Sending...' : 'Send Email' }}
+                            </button>
+                            <Link
+                                :href="`/portal/admin/staff/${member.id}/edit`"
+                                class="px-3 py-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-md transition-colors"
+                            >
+                                Edit
+                            </Link>
+                            <button
+                                v-if="member.role !== 'super_admin' && confirmingDelete !== member.id"
+                                @click="confirmingDelete = member.id"
+                                class="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                        <div v-if="member.role !== 'super_admin' && confirmingDelete === member.id" class="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3">
+                            <input
+                                v-model="deleteConfirmText"
+                                type="text"
+                                placeholder="Type 'delete'"
+                                class="w-full px-2 py-1.5 text-sm border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                                @keyup.enter="deleteStaff(member.id)"
+                            />
+                            <div class="flex flex-wrap gap-2">
+                                <button
+                                    @click="deleteStaff(member.id)"
+                                    :disabled="deleteConfirmText.toLowerCase() !== 'delete'"
+                                    :class="[
+                                        'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                                        deleteConfirmText.toLowerCase() === 'delete'
+                                            ? 'text-white bg-red-600 hover:bg-red-700'
+                                            : 'text-red-300 bg-red-100 cursor-not-allowed',
+                                    ]"
+                                >
+                                    Confirm
+                                </button>
+                                <button
+                                    @click="cancelDelete"
+                                    class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 rounded-md transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -247,7 +247,7 @@ const cancelDelete = () => {
     <PortalLayout>
         <template #header>{{ grade.name }}</template>
 
-        <div class="space-y-6">
+        <div class="min-w-0 max-w-full space-y-6">
             <!-- Breadcrumb -->
             <div>
                 <Link 
@@ -285,11 +285,11 @@ const cancelDelete = () => {
 
             <!-- Teachers Section -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div class="px-4 sm:px-6 py-4 border-b border-slate-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h2 class="text-lg font-serif font-semibold text-slate-900">Assigned Teachers</h2>
                     <button
                         @click="openTeacherModal"
-                        class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors"
+                        class="inline-flex w-full sm:w-auto items-center justify-center px-3 py-1.5 text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors"
                     >
                         <PencilIcon class="w-4 h-4 mr-1" />
                         Edit Teachers
@@ -300,7 +300,7 @@ const cancelDelete = () => {
                     <div
                         v-for="teacher in grade.teachers"
                         :key="teacher.id"
-                        class="px-6 py-4 flex items-center gap-4"
+                        class="px-4 sm:px-6 py-4 flex items-center gap-4 min-w-0"
                     >
                         <div class="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
                             <span class="text-sm font-medium text-emerald-700">
@@ -320,9 +320,9 @@ const cancelDelete = () => {
 
             <!-- Students Section -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
+                <div class="px-4 sm:px-6 py-4 border-b border-slate-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h2 class="text-lg font-serif font-semibold text-slate-900">Students</h2>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                         <button
                             v-if="!showAddStudentForm"
                             type="button"
@@ -442,32 +442,32 @@ const cancelDelete = () => {
                     <div
                         v-for="student in students"
                         :key="student.id"
-                        class="px-6 py-4"
+                        class="px-4 sm:px-6 py-4"
                     >
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4 flex-1 min-w-0">
+                        <div class="flex flex-col gap-3">
+                            <div class="flex items-start gap-4 min-w-0">
                                 <div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
                                     <UserGroupIcon class="w-5 h-5 text-slate-500" />
                                 </div>
-                                <div v-if="editingStudent !== student.id" class="min-w-0">
-                                    <p class="text-sm font-medium text-slate-900">{{ student.name }}</p>
-                                    <p v-if="student.parents && student.parents.length > 0" class="text-xs text-slate-500">
+                                <div v-if="editingStudent !== student.id" class="min-w-0 flex-1">
+                                    <p class="text-sm font-medium text-slate-900 break-words">{{ student.name }}</p>
+                                    <p v-if="student.parents && student.parents.length > 0" class="text-xs text-slate-500 break-words">
                                         Parent{{ student.parents.length > 1 ? 's' : '' }}:
                                         {{ student.parents.map(p => p.name).join(', ') }}
                                     </p>
                                 </div>
-                                <div v-else>
+                                <div v-else class="min-w-0 flex-1">
                                     <input
                                         v-model="editStudentForm.name"
                                         type="text"
-                                        class="px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                                        class="w-full px-3 py-1.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                                         :class="{ 'border-red-500': editStudentForm.errors.name }"
                                     />
                                     <p v-if="editStudentForm.errors.name" class="mt-0.5 text-xs text-red-600">{{ editStudentForm.errors.name }}</p>
                                 </div>
-                            <!-- Parent Code column -->
-                            <div class="flex items-center gap-2 flex-shrink-0">
-                                <span v-if="parentCodeDisplay(student)" class="text-xs font-mono text-slate-600">
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span v-if="parentCodeDisplay(student)" class="text-xs font-mono text-slate-600 break-all">
                                     {{ parentCodeDisplay(student) }}
                                 </span>
                                 <button
@@ -490,8 +490,7 @@ const cancelDelete = () => {
                                     {{ student.code_status === 'active' ? 'Regenerate' : 'Generate' }}
                                 </button>
                             </div>
-                            </div>
-                            <div class="flex items-center gap-2 flex-shrink-0">
+                            <div class="flex flex-wrap items-center gap-2">
                                 <template v-if="editingStudent !== student.id && confirmingDelete !== student.id">
                                     <button
                                         @click="startEditStudent(student)"
@@ -526,12 +525,12 @@ const cancelDelete = () => {
                                     </button>
                                 </template>
                                 <template v-else-if="confirmingDelete === student.id">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:items-center">
                                         <input
                                             v-model="deleteConfirmText"
                                             type="text"
                                             placeholder="Type 'delete'"
-                                            class="w-24 px-2 py-1 text-xs border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                                            class="w-full sm:w-24 px-2 py-1 text-xs border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
                                             @keyup.enter="deleteStudent(student.id)"
                                         />
                                         <button
@@ -557,7 +556,7 @@ const cancelDelete = () => {
                             </div>
                         </div>
                         <!-- Parent emails when editing -->
-                        <div v-if="editingStudent === student.id" class="mt-3 pl-14 space-y-2">
+                        <div v-if="editingStudent === student.id" class="mt-3 sm:pl-14 space-y-2">
                             <p class="text-xs font-medium text-slate-600">Parent emails (optional — for sending codes, up to 4)</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                                 <div>

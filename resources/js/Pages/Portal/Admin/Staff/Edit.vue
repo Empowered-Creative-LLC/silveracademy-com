@@ -58,7 +58,7 @@ const clearAllGrades = () => {
     <PortalLayout>
         <template #header>Edit Staff Member</template>
 
-        <div class="max-w-2xl mx-auto space-y-6">
+        <div class="min-w-0 max-w-full mx-auto space-y-6">
             <!-- Breadcrumb -->
             <div>
                 <Link 
@@ -82,7 +82,7 @@ const clearAllGrades = () => {
                 @submit.prevent="submit"
                 :action="updateUrl"
                 method="post"
-                class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6"
+                class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-6"
             >
                 <input type="hidden" name="_method" value="PUT" />
                 <!-- Role Selection -->
@@ -90,7 +90,7 @@ const clearAllGrades = () => {
                     <label class="block text-sm font-medium text-slate-700 mb-3">
                         Role
                     </label>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <label 
                             :class="[
                                 'relative flex flex-col items-center p-4 border-2 rounded-xl cursor-pointer transition-all',
@@ -196,7 +196,7 @@ const clearAllGrades = () => {
                 <!-- Password -->
                 <div class="border-t border-slate-200 pt-6">
                     <h3 class="text-sm font-medium text-slate-700 mb-4">Change Password (leave blank to keep current)</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="password" class="block text-sm font-medium text-slate-700 mb-1">
                                 New Password
@@ -228,7 +228,7 @@ const clearAllGrades = () => {
 
                 <!-- Grade Assignment -->
                 <div class="border-t border-slate-200 pt-6">
-                    <div class="flex items-center justify-between gap-3 mb-2">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
                         <label class="block text-sm font-medium text-slate-700">
                             Assign to Grade Levels
                         </label>

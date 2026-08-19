@@ -579,7 +579,7 @@ const listEmptyMessage = computed(() => {
             <span>Calendar</span>
         </template>
         
-        <div class="max-w-full overflow-x-hidden lg:flex lg:h-full lg:flex-col">
+        <div class="min-w-0 max-w-full overflow-x-hidden lg:flex lg:h-full lg:flex-col">
             <header class="flex flex-col gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:flex-none rounded-t-xl">
                 <div class="flex w-full flex-col gap-3">
                     <h1 class="text-base font-semibold text-slate-900">
@@ -627,16 +627,32 @@ const listEmptyMessage = computed(() => {
                         </button>
                     </div>
 
-                    <div class="flex items-center gap-2">
-                        <label for="calendar-display-mode" class="text-sm font-medium text-slate-600">View</label>
-                        <select
-                            id="calendar-display-mode"
-                            v-model="displayMode"
-                            class="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    <div class="flex rounded-lg bg-slate-100 p-1">
+                        <label class="sr-only">Display mode</label>
+                        <button
+                            type="button"
+                            @click="displayMode = 'calendar'"
+                            :class="[
+                                'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                                displayMode === 'calendar'
+                                    ? 'bg-white shadow text-slate-900'
+                                    : 'text-slate-500 hover:text-slate-900',
+                            ]"
                         >
-                            <option value="calendar">Calendar View</option>
-                            <option value="list">List View</option>
-                        </select>
+                            Calendar
+                        </button>
+                        <button
+                            type="button"
+                            @click="displayMode = 'list'"
+                            :class="[
+                                'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                                displayMode === 'list'
+                                    ? 'bg-white shadow text-slate-900'
+                                    : 'text-slate-500 hover:text-slate-900',
+                            ]"
+                        >
+                            List
+                        </button>
                     </div>
                     </div>
                 </div>
@@ -956,14 +972,14 @@ const listEmptyMessage = computed(() => {
 
             <!-- List View -->
             <div v-else class="bg-white rounded-b-xl shadow-sm ring-1 ring-black/5 overflow-hidden">
-                <div class="px-6 py-3 border-b border-slate-100 bg-slate-50">
+                <div class="px-4 sm:px-6 py-3 border-b border-slate-100 bg-slate-50">
                     <h2 class="text-sm font-semibold text-slate-900">{{ currentMonthName }}</h2>
                 </div>
                 <div v-if="listItemsForCurrentMonth.length > 0" class="divide-y divide-slate-100">
                     <div
                         v-for="item in listItemsForCurrentMonth"
                         :key="item.id"
-                        class="px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                        class="px-4 sm:px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
                         @click="openEventDetails({
                             id: item.id,
                             name: item.title,
@@ -980,9 +996,9 @@ const listEmptyMessage = computed(() => {
                             menuId: item.menuId,
                         })"
                     >
-                        <div class="flex items-center justify-between gap-3">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div class="min-w-0">
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-wrap items-center gap-2">
                                     <span
                                         v-if="item.itemType === 'lunch'"
                                         class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
@@ -996,18 +1012,18 @@ const listEmptyMessage = computed(() => {
                                         School Closure
                                     </span>
                                     <p :class="[
-                                        'font-medium truncate',
+                                        'font-medium break-words',
                                         item.itemType === 'lunch' ? 'text-amber-700' : item.isSchoolClosure ? 'text-red-700' : 'text-slate-900'
                                     ]">
                                         {{ item.title }}
                                     </p>
                                 </div>
-                                <p class="text-sm text-slate-600">
+                                <p class="text-sm text-slate-600 break-words">
                                     {{ formatFullDate(item.datetime) }}
                                     <span v-if="item.itemType === 'event' && item.datetime">at {{ formatTime(item.datetime) }}</span>
                                 </p>
                             </div>
-                            <span class="text-xs text-brand-700 bg-brand-50 px-2 py-1 rounded-md">View</span>
+                            <span class="self-start sm:self-center text-xs text-brand-700 bg-brand-50 px-2 py-1 rounded-md flex-shrink-0">View</span>
                         </div>
                     </div>
                 </div>
@@ -1057,8 +1073,8 @@ const listEmptyMessage = computed(() => {
             
             <!-- Weekly Items List (calendar view only — list view already shows the full month) -->
             <div v-if="displayMode === 'calendar'" class="mt-8 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                    <div class="flex items-center justify-between">
+                <div class="px-4 sm:px-6 py-4 border-b border-slate-200 bg-slate-50">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                         <h2 class="text-lg font-serif font-semibold text-slate-900">{{ weekSectionTitle }}</h2>
                         <span class="text-sm text-slate-500">{{ selectedWeekRange }}</span>
                     </div>
@@ -1068,14 +1084,14 @@ const listEmptyMessage = computed(() => {
                     <div 
                         v-for="item in currentWeekItems" 
                         :key="item.id"
-                        class="flex items-start gap-4 px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                        class="flex flex-col gap-3 px-4 sm:px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
                         @click="openEventDetails(item)"
                     >
-                        <div class="flex-shrink-0 pt-0.5">
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span class="text-sm font-medium text-slate-500">{{ item.dayName }}</span>
-                            <span class="text-sm font-semibold text-slate-900 ml-1">{{ item.formattedDate }}</span>
+                            <span class="text-sm font-semibold text-slate-900">{{ item.formattedDate }}</span>
                         </div>
-                        <div class="flex-1 min-w-0">
+                        <div class="min-w-0">
                             <!-- Lunch Menu -->
                             <template v-if="item.type === 'lunch'">
                                 <p class="font-medium text-amber-600 mb-1">Lunch Menu</p>
@@ -1118,7 +1134,7 @@ const listEmptyMessage = computed(() => {
                                 </div>
                             </template>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2" @click.stop>
                             <!-- Admin actions for lunch menu -->
                             <template v-if="item.type === 'lunch' && isAdmin">
                                 <Link 
@@ -1140,7 +1156,7 @@ const listEmptyMessage = computed(() => {
                             <button 
                                 type="button"
                                 @click="openEventDetails(item)"
-                                class="flex-shrink-0 px-4 py-2 text-sm font-medium text-brand-600 bg-brand-50 rounded-lg hover:bg-brand-100 transition-colors"
+                                class="w-full sm:w-auto flex-shrink-0 px-4 py-2 text-sm font-medium text-brand-600 bg-brand-50 rounded-lg hover:bg-brand-100 transition-colors"
                             >
                                 View Details
                             </button>
@@ -1148,7 +1164,7 @@ const listEmptyMessage = computed(() => {
                     </div>
                 </div>
                 
-                <div v-else class="px-6 py-12 text-center">
+                <div v-else class="px-4 sm:px-6 py-12 text-center">
                     <CalendarIcon class="mx-auto h-12 w-12 text-slate-300" />
                     <p class="mt-2 text-sm text-slate-500">
                         {{ currentView === 'events' ? 'No events scheduled for this week.' : 
