@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
+import { computed } from 'vue';
 import { 
     ChevronLeftIcon,
     AcademicCapIcon,
@@ -20,9 +21,15 @@ const form = useForm({
     grade_ids: [],
 });
 
+const storeUrl = '/portal/admin/staff';
+
 const submit = () => {
-    form.post('/portal/admin/staff');
+    form.post(storeUrl, {
+        preserveScroll: false,
+    });
 };
+
+const hasErrors = computed(() => Object.keys(form.errors).length > 0);
 
 const toggleGrade = (gradeId) => {
     const index = form.grade_ids.indexOf(gradeId);
@@ -73,8 +80,20 @@ const clearAllGrades = () => {
                 </div>
             </div>
 
+            <div v-if="hasErrors" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p class="text-sm font-medium text-red-800">Please fix the errors below and try again.</p>
+                <ul v-if="Object.keys(form.errors).length > 1" class="mt-2 list-disc list-inside text-sm text-red-700">
+                    <li v-for="(message, field) in form.errors" :key="field">{{ message }}</li>
+                </ul>
+            </div>
+
             <!-- Form -->
-            <form @submit.prevent="submit" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+            <form
+                @submit.prevent="submit"
+                :action="storeUrl"
+                method="post"
+                class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6"
+            >
                 <!-- Role Selection -->
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-3">
@@ -222,6 +241,7 @@ const clearAllGrades = () => {
                         </label>
                     </div>
                     <p v-else class="text-sm text-slate-500 italic">No grade levels available.</p>
+                    <p v-if="form.errors.grade_ids" class="mt-2 text-sm text-red-600">{{ form.errors.grade_ids }}</p>
                     <p class="mt-2 text-xs text-slate-500">Select the grade levels this staff member will teach or manage.</p>
                 </div>
 

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Notifications\AccountApproved;
 use App\Support\PortalPassword;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
@@ -81,11 +82,13 @@ class StaffController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:users',
             'role' => 'required|in:teacher,admin',
             'grade_ids' => 'nullable|array',
             'grade_ids.*' => 'exists:grades,id',
         ]);
+
+        $validated['email'] = strtolower($validated['email']);
 
         // Generate password
         $password = PortalPassword::generate();
@@ -110,11 +113,21 @@ class StaffController extends Controller
             $user->grades()->sync($validated['grade_ids']);
         }
 
-        // Send welcome email with credentials
-        $user->notify(new AccountApproved($password));
+        // Send welcome email with credentials (don't block account creation if mail fails).
+        try {
+            $user->notify(new AccountApproved($password));
+            $successMessage = "Staff member created successfully. Welcome email sent to {$user->email}.";
+        } catch (\Throwable $e) {
+            Log::error('Staff welcome email failed after create', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'message' => $e->getMessage(),
+            ]);
+            $successMessage = "Staff member created successfully. Welcome email could not be sent — use Send Email from Staff Management to deliver credentials.";
+        }
 
         return redirect()->route('admin.staff.index')
-            ->with('success', "Staff member created successfully. Welcome email sent to {$user->email}.")
+            ->with('success', $successMessage)
             ->with('credentials', [[
                 'name' => $user->name,
                 'email' => $user->email,
@@ -172,12 +185,14 @@ class StaffController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:users,email,' . $staff->id,
+            'email' => 'required|string|email|max:255|unique:users,email,' . $staff->id,
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|in:teacher,admin',
             'grade_ids' => 'nullable|array',
             'grade_ids.*' => 'exists:grades,id',
         ]);
+
+        $validated['email'] = strtolower($validated['email']);
 
         // Don't allow changing super admin role
         if ($staff->isSuperAdmin()) {
