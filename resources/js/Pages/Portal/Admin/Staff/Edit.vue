@@ -22,8 +22,13 @@ const form = useForm({
     grade_ids: props.staff.grade_ids || [],
 });
 
+const updateUrl = computed(() => `/portal/admin/staff/${props.staff.id}`);
+
 const submit = () => {
-    form.put(`/portal/admin/staff/${props.staff.id}`);
+    form.transform((data) => ({
+        ...data,
+        _method: 'put',
+    })).post(updateUrl.value);
 };
 
 const isTeacher = computed(() => form.role === 'teacher');
@@ -37,6 +42,14 @@ const toggleGrade = (gradeId) => {
         form.grade_ids.splice(index, 1);
     }
 };
+
+const selectAllGrades = () => {
+    form.grade_ids = props.grades.map((grade) => grade.id);
+};
+
+const clearAllGrades = () => {
+    form.grade_ids = [];
+};
 </script>
 
 <template>
@@ -45,7 +58,7 @@ const toggleGrade = (gradeId) => {
     <PortalLayout>
         <template #header>Edit Staff Member</template>
 
-        <div class="max-w-2xl mx-auto space-y-6">
+        <div class="min-w-0 max-w-full mx-auto space-y-6">
             <!-- Breadcrumb -->
             <div>
                 <Link 
@@ -65,13 +78,19 @@ const toggleGrade = (gradeId) => {
             </div>
 
             <!-- Form -->
-            <form @submit.prevent="submit" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+            <form
+                @submit.prevent="submit"
+                :action="updateUrl"
+                method="post"
+                class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-6"
+            >
+                <input type="hidden" name="_method" value="PUT" />
                 <!-- Role Selection -->
                 <div v-if="!isSuperAdmin">
                     <label class="block text-sm font-medium text-slate-700 mb-3">
                         Role
                     </label>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <label 
                             :class="[
                                 'relative flex flex-col items-center p-4 border-2 rounded-xl cursor-pointer transition-all',
@@ -177,7 +196,7 @@ const toggleGrade = (gradeId) => {
                 <!-- Password -->
                 <div class="border-t border-slate-200 pt-6">
                     <h3 class="text-sm font-medium text-slate-700 mb-4">Change Password (leave blank to keep current)</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label for="password" class="block text-sm font-medium text-slate-700 mb-1">
                                 New Password
@@ -209,9 +228,28 @@ const toggleGrade = (gradeId) => {
 
                 <!-- Grade Assignment -->
                 <div class="border-t border-slate-200 pt-6">
-                    <label class="block text-sm font-medium text-slate-700 mb-2">
-                        Assign to Grade Levels
-                    </label>
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
+                        <label class="block text-sm font-medium text-slate-700">
+                            Assign to Grade Levels
+                        </label>
+                        <div v-if="grades.length > 0" class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="selectAllGrades"
+                                class="text-xs font-medium text-brand-700 hover:text-brand-800"
+                            >
+                                Select all
+                            </button>
+                            <span class="text-slate-300">|</span>
+                            <button
+                                type="button"
+                                @click="clearAllGrades"
+                                class="text-xs font-medium text-slate-600 hover:text-slate-800"
+                            >
+                                Clear all
+                            </button>
+                        </div>
+                    </div>
                     <div v-if="grades.length > 0" class="border border-slate-200 rounded-lg divide-y divide-slate-200 max-h-64 overflow-y-auto">
                         <label 
                             v-for="grade in grades" 

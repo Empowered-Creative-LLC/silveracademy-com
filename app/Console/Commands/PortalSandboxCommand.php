@@ -95,6 +95,10 @@ class PortalSandboxCommand extends Command
             $this->newLine();
             $this->info("Starting sandbox server on {$appUrl} …");
 
+            // Set APP_ENV in the process environment so every PHP child spawned by
+            // `php artisan serve` inherits it and loads .env.sandbox correctly.
+            putenv('APP_ENV=sandbox');
+
             return $this->call('serve', [
                 '--env' => 'sandbox',
                 '--port' => $port,

@@ -155,7 +155,7 @@ Route::middleware(['auth', 'admin'])->prefix('portal/admin')->name('admin.')->gr
     Route::get('/staff/template', [StaffImportController::class, 'downloadTemplate'])->name('staff.template');
     Route::get('/staff/export-credentials', [StaffImportController::class, 'exportCredentials'])->name('staff.export-credentials');
     Route::get('/staff/{staff}/edit', [StaffController::class, 'edit'])->name('staff.edit');
-    Route::put('/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
+    Route::match(['put', 'patch', 'post'], '/staff/{staff}', [StaffController::class, 'update'])->name('staff.update');
     Route::delete('/staff/{staff}', [StaffController::class, 'destroy'])->name('staff.destroy');
     Route::post('/staff/{staff}/toggle-role', [StaffController::class, 'toggleRole'])->name('staff.toggle-role');
     Route::post('/staff/{staff}/send-welcome', [StaffController::class, 'sendWelcomeEmail'])->name('staff.send-welcome');

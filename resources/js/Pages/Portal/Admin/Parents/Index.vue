@@ -85,7 +85,7 @@ const formatDate = (date) => {
     <PortalLayout>
         <template #header>Parent Management</template>
 
-        <div class="space-y-6">
+        <div class="min-w-0 max-w-full space-y-6">
             <!-- Header Actions -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -150,7 +150,7 @@ const formatDate = (date) => {
                     </p>
                 </div>
 
-                <table v-else class="min-w-full divide-y divide-slate-200">
+                <table v-else class="hidden md:table min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -292,12 +292,99 @@ const formatDate = (date) => {
                     </tbody>
                 </table>
 
+                <!-- Mobile cards -->
+                <div v-if="parents.data.length > 0" class="md:hidden divide-y divide-slate-200">
+                    <div v-for="parent in parents.data" :key="'mobile-' + parent.id" class="p-4 space-y-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="h-10 w-10 flex-shrink-0 rounded-full bg-amber-100 flex items-center justify-center">
+                                <span class="text-sm font-medium text-amber-700">
+                                    {{ parent.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) }}
+                                </span>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-medium text-slate-900 break-words">{{ parent.name }}</div>
+                                <div class="text-sm text-slate-500 break-all">{{ parent.email }}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs font-medium uppercase tracking-wide text-slate-500 mb-1">Children</p>
+                            <div v-if="parent.children.length > 0" class="space-y-1">
+                                <div v-for="child in parent.children" :key="child.id" class="text-sm break-words">
+                                    <span class="font-medium text-slate-700">{{ child.name }}</span>
+                                    <span class="text-slate-400 text-xs ml-1">({{ child.grade_name || 'No Grade' }})</span>
+                                </div>
+                            </div>
+                            <span v-else class="text-sm text-slate-400 italic">No children linked</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <CheckCircleIcon v-if="parent.email_verified_at" class="w-4 h-4 text-emerald-500" />
+                            <XCircleIcon v-else class="w-4 h-4 text-amber-500" />
+                            <span :class="['text-sm', parent.email_verified_at ? 'text-emerald-600' : 'text-amber-600']">
+                                {{ parent.email_verified_at ? 'Verified' : 'Pending' }}
+                            </span>
+                            <span class="text-sm text-slate-400">· Joined {{ formatDate(parent.created_at) }}</span>
+                        </div>
+                        <div v-if="!parent.email_verified_at" class="flex flex-wrap gap-2">
+                            <button @click="verifyEmail(parent.id)" class="text-xs text-emerald-600 hover:text-emerald-700">
+                                Verify
+                            </button>
+                            <button @click="resendVerification(parent.id)" class="text-xs text-brand-600 hover:text-brand-700">
+                                Resend
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <Link
+                                :href="`/portal/admin/parents/${parent.id}/edit`"
+                                class="px-3 py-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-md transition-colors"
+                            >
+                                Edit
+                            </Link>
+                            <button
+                                v-if="confirmingDelete !== parent.id"
+                                @click="confirmingDelete = parent.id"
+                                class="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                        <div v-if="confirmingDelete === parent.id" class="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3">
+                            <input
+                                v-model="deleteConfirmText"
+                                type="text"
+                                placeholder="Type 'delete'"
+                                class="w-full px-2 py-1.5 text-sm border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                                @keyup.enter="deleteParent(parent.id)"
+                            />
+                            <div class="flex flex-wrap gap-2">
+                                <button
+                                    @click="deleteParent(parent.id)"
+                                    :disabled="deleteConfirmText.toLowerCase() !== 'delete'"
+                                    :class="[
+                                        'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                                        deleteConfirmText.toLowerCase() === 'delete'
+                                            ? 'text-white bg-red-600 hover:bg-red-700'
+                                            : 'text-red-300 bg-red-100 cursor-not-allowed',
+                                    ]"
+                                >
+                                    Confirm
+                                </button>
+                                <button
+                                    @click="cancelDelete"
+                                    class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 rounded-md transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Pagination -->
-                <div v-if="parents.last_page > 1" class="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+                <div v-if="parents.last_page > 1" class="px-4 sm:px-6 py-4 border-t border-slate-200 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-sm text-slate-600">
                         Showing {{ parents.from }} to {{ parents.to }} of {{ parents.total }} parents
                     </p>
-                    <div class="flex gap-2">
+                    <div class="flex flex-wrap gap-2">
                         <Link
                             v-for="link in parents.links"
                             :key="link.label"

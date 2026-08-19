@@ -72,7 +72,7 @@ const formatDate = (date) => {
     <PortalLayout>
         <template #header>Edit Parent Account</template>
 
-        <div class="max-w-4xl mx-auto">
+        <div class="min-w-0 max-w-full mx-auto">
             <!-- Back Link -->
             <div class="mb-6">
                 <Link
@@ -154,7 +154,7 @@ const formatDate = (date) => {
 
                 <!-- Password Change -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                         <h2 class="text-lg font-serif font-semibold text-slate-900 flex items-center gap-2">
                             <KeyIcon class="w-5 h-5 text-slate-500" />
                             Password

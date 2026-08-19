@@ -1,12 +1,16 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = defineProps({
     posts: Object,
     filters: Object,
 });
+
+const page = usePage();
+const successMessage = computed(() => page.props.flash?.success);
+const errorMessage = computed(() => page.props.flash?.error);
 
 const confirmingDelete = ref(null);
 const deleteConfirmText = ref('');
@@ -48,15 +52,22 @@ const formatDate = (date) => {
     <PortalLayout>
         <template #header>News & Events</template>
         
-        <div class="space-y-6">
+        <div class="min-w-0 max-w-full space-y-6">
+            <div v-if="successMessage" class="p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                {{ successMessage }}
+            </div>
+            <div v-if="errorMessage" class="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+                {{ errorMessage }}
+            </div>
+
             <!-- Header -->
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="text-slate-600">Manage news articles and upcoming events.</p>
                 </div>
                 <Link
                     href="/portal/posts/create"
-                    class="inline-flex items-center px-4 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors"
+                    class="inline-flex w-full sm:w-auto items-center justify-center px-4 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors"
                 >
                     <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -83,7 +94,7 @@ const formatDate = (date) => {
                     </div>
                 </div>
 
-                <table v-else class="min-w-full divide-y divide-slate-200">
+                <table v-else class="hidden md:table min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -283,13 +294,119 @@ const formatDate = (date) => {
                     </tbody>
                 </table>
 
+                <!-- Mobile cards -->
+                <div v-if="posts.data.length > 0" class="md:hidden divide-y divide-slate-200">
+                    <div v-for="post in posts.data" :key="'mobile-' + post.id" class="p-4 space-y-3">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <img
+                                v-if="post.image_path"
+                                :src="`/storage/${post.image_path}`"
+                                :alt="post.title"
+                                class="h-10 w-10 flex-shrink-0 rounded-lg object-cover"
+                            />
+                            <div class="min-w-0">
+                                <div class="text-sm font-medium text-slate-900 break-words">{{ post.title }}</div>
+                                <div class="text-sm text-slate-500 break-all">{{ post.author?.name }}</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <span
+                                v-if="post.is_school_closure"
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                            >
+                                No School
+                            </span>
+                            <span
+                                v-else
+                                :class="[
+                                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                                    post.type === 'news' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800',
+                                ]"
+                            >
+                                {{ post.type === 'news' ? 'News' : 'Event' }}
+                            </span>
+                            <span
+                                :class="[
+                                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                                    post.published_at ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800',
+                                ]"
+                            >
+                                {{ post.published_at ? 'Published' : 'Draft' }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-500">
+                            <template v-if="post.type === 'event' && post.event_start_date">
+                                {{ formatDate(post.event_start_date) }}
+                            </template>
+                            <template v-else>
+                                {{ formatDate(post.created_at) }}
+                            </template>
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                @click="togglePublish(post.slug)"
+                                :class="[
+                                    'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                                    post.published_at
+                                        ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100'
+                                        : 'text-green-700 bg-green-50 hover:bg-green-100',
+                                ]"
+                            >
+                                {{ post.published_at ? 'Unpublish' : 'Publish' }}
+                            </button>
+                            <Link
+                                :href="`/portal/posts/${post.slug}/edit`"
+                                class="px-3 py-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-md transition-colors"
+                            >
+                                Edit
+                            </Link>
+                            <button
+                                v-if="confirmingDelete !== post.slug"
+                                @click="confirmingDelete = post.slug"
+                                class="px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                        <div v-if="confirmingDelete === post.slug" class="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3">
+                            <input
+                                v-model="deleteConfirmText"
+                                type="text"
+                                placeholder="Type 'delete'"
+                                class="w-full px-2 py-1.5 text-sm border border-red-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                                @keyup.enter="deletePost(post.slug)"
+                            />
+                            <div class="flex flex-wrap gap-2">
+                                <button
+                                    @click="deletePost(post.slug)"
+                                    :disabled="deleteConfirmText.toLowerCase() !== 'delete'"
+                                    :class="[
+                                        'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                                        deleteConfirmText.toLowerCase() === 'delete'
+                                            ? 'text-white bg-red-600 hover:bg-red-700'
+                                            : 'text-red-300 bg-red-100 cursor-not-allowed',
+                                    ]"
+                                >
+                                    Delete
+                                </button>
+                                <button
+                                    @click="cancelDelete"
+                                    class="px-3 py-1.5 text-xs font-medium text-slate-600 bg-white hover:bg-slate-100 rounded-md transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Pagination -->
-                <div v-if="posts.data.length > 0 && posts.last_page > 1" class="px-6 py-4 border-t border-slate-200">
-                    <div class="flex items-center justify-between">
+                <div v-if="posts.data.length > 0 && posts.last_page > 1" class="px-4 sm:px-6 py-4 border-t border-slate-200">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <p class="text-sm text-slate-600">
                             Showing {{ posts.from }} to {{ posts.to }} of {{ posts.total }} results
                         </p>
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2">
                             <Link
                                 v-for="link in posts.links"
                                 :key="link.label"

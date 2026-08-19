@@ -27,30 +27,30 @@ const getTeacherNames = (teachers) => {
     <PortalLayout>
         <template #header>Grade Management</template>
 
-        <div class="space-y-6">
+        <div class="min-w-0 max-w-full space-y-6">
             <!-- Header Actions -->
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <p class="text-slate-600">Manage grades, teachers, and student assignments.</p>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                     <a 
                         href="/portal/admin/students/template"
-                        class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
+                        class="inline-flex w-full sm:w-auto items-center justify-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
                     >
                         <ArrowDownTrayIcon class="w-4 h-4 mr-2" />
                         Download Template
                     </a>
                     <a 
                         href="/portal/admin/students/export"
-                        class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
+                        class="inline-flex w-full sm:w-auto items-center justify-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition-colors"
                     >
                         <ArrowDownTrayIcon class="w-4 h-4 mr-2" />
                         Export Students
                     </a>
                     <Link
                         href="/portal/admin/students/import"
-                        class="inline-flex items-center px-4 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors"
+                        class="inline-flex w-full sm:w-auto items-center justify-center px-4 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 transition-colors"
                     >
                         <ArrowUpTrayIcon class="w-4 h-4 mr-2" />
                         Import Students
@@ -75,29 +75,25 @@ const getTeacherNames = (teachers) => {
                         v-for="grade in grades"
                         :key="grade.id"
                         :href="`/portal/admin/grades/${grade.id}`"
-                        class="flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors group"
+                        class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 hover:bg-slate-50 transition-colors group"
                     >
-                        <div class="flex items-center gap-4">
-                            <div class="p-3 bg-brand-50 rounded-lg group-hover:bg-brand-100 transition-colors">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="p-3 bg-brand-50 rounded-lg group-hover:bg-brand-100 transition-colors flex-shrink-0">
                                 <AcademicCapIcon class="w-6 h-6 text-brand-600" />
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <h3 class="text-sm font-semibold text-slate-900">{{ grade.name }}</h3>
-                                <p class="text-sm text-slate-500">
+                                <p class="text-sm text-slate-500 break-words">
                                     {{ getTeacherNames(grade.teachers) }}
                                 </p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-6">
-                            <div class="text-right">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex items-center gap-1 text-sm text-slate-600">
-                                        <UserGroupIcon class="w-4 h-4" />
-                                        <span>{{ grade.students_count }} student{{ grade.students_count !== 1 ? 's' : '' }}</span>
-                                    </div>
-                                </div>
+                        <div class="flex items-center justify-between sm:justify-end gap-4 sm:gap-6">
+                            <div class="flex items-center gap-1 text-sm text-slate-600">
+                                <UserGroupIcon class="w-4 h-4 flex-shrink-0" />
+                                <span>{{ grade.students_count }} student{{ grade.students_count !== 1 ? 's' : '' }}</span>
                             </div>
-                            <ChevronRightIcon class="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                            <ChevronRightIcon class="w-5 h-5 text-slate-400 group-hover:text-slate-600 transition-colors flex-shrink-0" />
                         </div>
                     </Link>
                 </div>

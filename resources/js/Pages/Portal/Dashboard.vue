@@ -12,6 +12,8 @@ import {
     ClockIcon,
     NewspaperIcon,
     PencilSquareIcon,
+    Cog6ToothIcon,
+    QuestionMarkCircleIcon,
 } from '@heroicons/vue/24/outline';
 import { ref, computed, provide, watch, onMounted, onUnmounted } from 'vue';
 
@@ -158,6 +160,51 @@ const formatWeekDate = (dateStr) => {
         timeZone: 'America/New_York',
     });
 };
+
+// Staff announcements toggle (Staff View).
+const staffAnnouncementTab = ref('all_staff');
+const allStaffAnnouncements = computed(() =>
+    (props.teacherAnnouncements ?? []).filter(a => a.audience === 'teachers_only'),
+);
+const myGradeAnnouncements = computed(() =>
+    (props.teacherAnnouncements ?? []).filter(a => a.audience === 'grade_teachers'),
+);
+const activeStaffAnnouncements = computed(() =>
+    staffAnnouncementTab.value === 'all_staff' ? allStaffAnnouncements.value : myGradeAnnouncements.value,
+);
+
+const defaultQuickActionClass = 'text-slate-700 hover:bg-slate-100';
+
+const quickActions = computed(() => {
+    if (showAdminView.value) {
+        return [
+            { href: '/portal/posts/create', title: 'Post News/Event', icon: MegaphoneIcon, class: 'text-brand-700 hover:bg-brand-50' },
+            { href: '/portal/lunch/create', title: 'Add Lunch Menu', icon: ClipboardDocumentListIcon },
+            { href: '/portal/posts', title: 'Manage Posts', icon: PlusIcon },
+            { href: '/portal/calendar', title: 'View Calendar', icon: CalendarIcon },
+        ];
+    }
+
+    if (showTeacherView.value) {
+        return [
+            { href: '/portal/teacher-news/create', title: 'Post Grade News', icon: PencilSquareIcon, class: 'text-emerald-700 hover:bg-emerald-50' },
+            { href: '/portal/calendar', title: 'View Calendar', icon: CalendarIcon },
+            { href: '/portal/calendar?view=lunch', title: 'Lunch Menu', icon: ClipboardDocumentListIcon },
+            { href: '/news-events', title: 'News & Events', icon: MegaphoneIcon, external: true },
+        ];
+    }
+
+    if (showParentView.value) {
+        return [
+            { href: '/portal/calendar', title: 'View Calendar', icon: CalendarIcon, class: 'text-brand-700 hover:bg-brand-50' },
+            { href: '/portal/calendar?view=lunch', title: 'Lunch Menu', icon: ClipboardDocumentListIcon },
+            { href: '/portal/settings', title: 'Settings', icon: Cog6ToothIcon },
+            { href: '/portal/help', title: 'Help', icon: QuestionMarkCircleIcon },
+        ];
+    }
+
+    return [];
+});
 </script>
 
 <template>
@@ -165,8 +212,8 @@ const formatWeekDate = (dateStr) => {
 
     <PortalLayout>
         <template #header>
-            <div class="flex items-center justify-between">
-                <span>Welcome back, {{ user?.name || 'User' }}!</span>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span class="break-words">Welcome back, {{ user?.name || 'User' }}!</span>
                 
                 <!-- Role toggle for staff/admin who are also parents (super admin uses the header dropdown) -->
                 <div v-if="canSwitchPortalView && !isSuperAdmin" class="flex items-center gap-3">
@@ -182,7 +229,45 @@ const formatWeekDate = (dateStr) => {
             </div>
         </template>
         
-        <div class="space-y-8">
+        <div class="min-w-0 max-w-full space-y-8">
+            <!-- Quick Actions Bar (all roles) -->
+            <div v-if="quickActions.length" class="bg-white rounded-lg shadow-sm border border-slate-200 px-4 py-2">
+                <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                    <template v-for="action in quickActions" :key="action.title">
+                        <Link
+                            v-if="!action.external"
+                            :href="action.href"
+                            :class="[
+                                'group relative inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors',
+                                action.class || defaultQuickActionClass,
+                            ]"
+                            :title="action.title"
+                        >
+                            <component :is="action.icon" class="w-5 h-5" />
+                            <span class="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
+                                {{ action.title }}
+                            </span>
+                        </Link>
+                        <a
+                            v-else
+                            :href="action.href"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            :class="[
+                                'group relative inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors',
+                                action.class || defaultQuickActionClass,
+                            ]"
+                            :title="action.title"
+                        >
+                            <component :is="action.icon" class="w-5 h-5" />
+                            <span class="pointer-events-none absolute left-1/2 top-full z-10 mt-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow transition-opacity group-hover:opacity-100">
+                                {{ action.title }}
+                            </span>
+                        </a>
+                    </template>
+                </div>
+            </div>
+
             <!-- ADMIN VIEW -->
             <template v-if="showAdminView">
                 <!-- Admin Stats Grid -->
@@ -232,51 +317,6 @@ const formatWeekDate = (dateStr) => {
                         </div>
                     </div>
                 </div>
-
-                <!-- Admin Quick Actions -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200">
-                    <div class="px-6 py-4 border-b border-slate-200">
-                        <h2 class="text-lg font-serif font-semibold text-slate-900">Admin Quick Actions</h2>
-                    </div>
-                    <div class="p-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <Link
-                            href="/portal/posts/create"
-                            class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl hover:bg-brand-50 transition-colors group"
-                        >
-                            <div class="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:bg-brand-100 transition-colors">
-                                <MegaphoneIcon class="w-6 h-6 text-slate-600 group-hover:text-brand-600" />
-                            </div>
-                            <span class="text-sm font-medium text-slate-700 group-hover:text-brand-700 text-center">Post News/Event</span>
-                        </Link>
-                        <Link
-                            href="/portal/lunch/create"
-                            class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl hover:bg-brand-50 transition-colors group"
-                        >
-                            <div class="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:bg-brand-100 transition-colors">
-                                <ClipboardDocumentListIcon class="w-6 h-6 text-slate-600 group-hover:text-brand-600" />
-                            </div>
-                            <span class="text-sm font-medium text-slate-700 group-hover:text-brand-700 text-center">Add Lunch Menu</span>
-                        </Link>
-                        <Link
-                            href="/portal/posts"
-                            class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl hover:bg-brand-50 transition-colors group"
-                        >
-                            <div class="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:bg-brand-100 transition-colors">
-                                <PlusIcon class="w-6 h-6 text-slate-600 group-hover:text-brand-600" />
-                            </div>
-                            <span class="text-sm font-medium text-slate-700 group-hover:text-brand-700 text-center">Manage Posts</span>
-                        </Link>
-                        <Link
-                            href="/portal/calendar"
-                            class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl hover:bg-brand-50 transition-colors group"
-                        >
-                            <div class="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:bg-brand-100 transition-colors">
-                                <CalendarIcon class="w-6 h-6 text-slate-600 group-hover:text-brand-600" />
-                            </div>
-                            <span class="text-sm font-medium text-slate-700 group-hover:text-brand-700 text-center">View Calendar</span>
-                        </Link>
-                    </div>
-                </div>
             </template>
 
             <!-- STAFF VIEW -->
@@ -296,37 +336,55 @@ const formatWeekDate = (dateStr) => {
                     </div>
 
                     <!-- Staff Announcements -->
-                    <div v-if="teacherAnnouncements && teacherAnnouncements.length > 0" class="bg-amber-50 rounded-xl shadow-sm border border-amber-200 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-amber-200 bg-amber-100">
+                    <div v-if="teacherAnnouncements && teacherAnnouncements.length > 0" class="bg-slate-50 rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-white">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
-                                    <MegaphoneIcon class="w-5 h-5 text-amber-700" />
-                                    <h2 class="text-lg font-serif font-semibold text-amber-900">Staff Announcements</h2>
+                                    <MegaphoneIcon class="w-5 h-5 text-slate-700" />
+                                    <h2 class="text-lg font-serif font-semibold text-slate-900">Staff Announcements</h2>
                                 </div>
-                                <Link 
-                                    v-if="teacherGrades && teacherGrades.length > 0"
-                                    href="/portal/teacher-news" 
-                                    class="text-sm text-amber-700 hover:text-amber-800 font-medium"
-                                >
-                                    My Posts →
-                                </Link>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                                        :class="staffAnnouncementTab === 'all_staff' ? 'bg-sky-200 text-sky-900' : 'bg-white/70 text-slate-700 hover:bg-white'"
+                                        @click="staffAnnouncementTab = 'all_staff'"
+                                    >
+                                        All Staff
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                                        :class="staffAnnouncementTab === 'my_grade' ? 'bg-amber-200 text-slate-900' : 'bg-white/70 text-slate-700 hover:bg-white'"
+                                        @click="staffAnnouncementTab = 'my_grade'"
+                                    >
+                                        My Grade
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <div class="divide-y divide-amber-200">
                             <div
-                                v-for="announcement in teacherAnnouncements"
+                                v-if="activeStaffAnnouncements.length === 0"
+                                class="px-6 py-8 text-sm text-slate-600"
+                            >
+                                No announcements in this category.
+                            </div>
+                            <div
+                                v-else
+                                v-for="announcement in activeStaffAnnouncements"
                                 :key="announcement.id"
-                                class="px-6 py-4 hover:bg-amber-100/50 transition-colors"
+                                class="px-6 py-4 hover:bg-slate-100/50 transition-colors"
                             >
                                 <div class="flex items-start gap-4">
                                     <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
                                         :class="{
-                                            'bg-emerald-200': announcement.audience === 'teachers_only',
+                                            'bg-sky-200': announcement.audience === 'teachers_only',
                                             'bg-amber-200': announcement.audience === 'grade_teachers',
                                             'bg-purple-200': announcement.audience === 'specific_teacher',
                                         }"
                                     >
-                                        <UserGroupIcon v-if="announcement.audience === 'teachers_only'" class="w-5 h-5 text-emerald-700" />
+                                        <UserGroupIcon v-if="announcement.audience === 'teachers_only'" class="w-5 h-5 text-sky-700" />
                                         <svg v-else-if="announcement.audience === 'grade_teachers'" class="w-5 h-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                         </svg>
@@ -336,11 +394,11 @@ const formatWeekDate = (dateStr) => {
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2 flex-wrap">
-                                            <p class="text-sm font-medium text-amber-900">{{ announcement.title }}</p>
+                                            <p class="text-sm font-medium text-slate-900">{{ announcement.title }}</p>
                                             <!-- Target badge -->
                                             <span 
                                                 v-if="announcement.audience === 'teachers_only'"
-                                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700"
+                                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700"
                                             >
                                                 All Staff
                                             </span>
@@ -357,61 +415,15 @@ const formatWeekDate = (dateStr) => {
                                                 For: {{ announcement.target_teacher?.name || 'You' }}
                                             </span>
                                         </div>
-                                        <p class="text-sm text-amber-700 mt-1 line-clamp-2">
+                                        <p class="text-sm text-slate-700 mt-1 line-clamp-2">
                                             {{ announcement.content.replace(/<[^>]*>/g, '').substring(0, 150) }}{{ announcement.content.length > 150 ? '...' : '' }}
                                         </p>
-                                        <p class="text-xs text-amber-600 mt-2">
+                                        <p class="text-xs text-slate-600 mt-2">
                                             Posted {{ formatDate(announcement.published_at) }}
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Staff Quick Actions -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
-                        <div class="px-6 py-4 border-b border-slate-200">
-                            <h2 class="text-lg font-serif font-semibold text-slate-900">Quick Actions</h2>
-                        </div>
-                        <div class="p-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <Link
-                                href="/portal/teacher-news/create"
-                                class="flex flex-col items-center justify-center p-6 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors group border-2 border-emerald-200"
-                            >
-                                <div class="p-3 bg-emerald-100 rounded-full shadow-sm mb-3 group-hover:bg-emerald-200 transition-colors">
-                                    <PencilSquareIcon class="w-6 h-6 text-emerald-700" />
-                                </div>
-                                <span class="text-sm font-medium text-emerald-800 text-center">Post Grade News</span>
-                            </Link>
-                            <Link
-                                href="/portal/calendar"
-                                class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl hover:bg-emerald-50 transition-colors group"
-                            >
-                                <div class="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:bg-emerald-100 transition-colors">
-                                    <CalendarIcon class="w-6 h-6 text-slate-600 group-hover:text-emerald-600" />
-                                </div>
-                                <span class="text-sm font-medium text-slate-700 group-hover:text-emerald-700 text-center">View Calendar</span>
-                            </Link>
-                            <Link
-                                href="/portal/calendar?view=lunch"
-                                class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl hover:bg-emerald-50 transition-colors group"
-                            >
-                                <div class="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:bg-emerald-100 transition-colors">
-                                    <ClipboardDocumentListIcon class="w-6 h-6 text-slate-600 group-hover:text-emerald-600" />
-                                </div>
-                                <span class="text-sm font-medium text-slate-700 group-hover:text-emerald-700 text-center">Lunch Menu</span>
-                            </Link>
-                            <a
-                                href="/news-events"
-                                target="_blank"
-                                class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-xl hover:bg-emerald-50 transition-colors group"
-                            >
-                                <div class="p-3 bg-white rounded-full shadow-sm mb-3 group-hover:bg-emerald-100 transition-colors">
-                                    <MegaphoneIcon class="w-6 h-6 text-slate-600 group-hover:text-emerald-600" />
-                                </div>
-                                <span class="text-sm font-medium text-slate-700 group-hover:text-emerald-700 text-center">News & Events</span>
-                            </a>
                         </div>
                     </div>
 
