@@ -40,6 +40,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            // Plain token for this response. The document meta tag goes stale after
+            // logout regenerates the session while Inertia stays on the same page.
+            'csrf_token' => fn () => csrf_token(),
             'portal' => [
                 'coming_soon' => (bool) config('portal.coming_soon'),
                 'sandbox_enabled' => (bool) config('portal.sandbox_enabled') && ! app()->environment('production'),

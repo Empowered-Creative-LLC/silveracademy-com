@@ -72,6 +72,7 @@ class PortalFixesTest extends TestCase
         $response = $this->actingAs($admin)
             ->withHeaders([
                 'X-Inertia' => 'true',
+                'X-Inertia-Version' => app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request()),
                 'X-Requested-With' => 'XMLHttpRequest',
             ])
             ->get('/portal/calendar');

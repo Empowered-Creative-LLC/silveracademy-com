@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import WysiwygEditor from './WysiwygEditor.vue';
 
 const props = defineProps({
@@ -24,6 +24,8 @@ const props = defineProps({
 
 const emit = defineEmits(['submit']);
 
+const editorRef = ref(null);
+const localError = ref('');
 const imagePreview = ref(props.post?.image_path ? `/storage/${props.post.image_path}` : null);
 const dragActive = ref(false);
 
@@ -66,8 +68,54 @@ watch(() => props.form.type, (newType) => {
         props.form.recurrence_type = 'none';
         props.form.recurrence_end_date = '';
         props.form.is_public = false;
+    } else if (!props.form.event_visibility) {
+        props.form.event_visibility = 'internal';
     }
 });
+
+const plainContent = (html) => String(html || '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+
+const showFormError = async (message) => {
+    localError.value = message;
+    await nextTick();
+    document.getElementById('post-form-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+const submitForm = async () => {
+    localError.value = '';
+    editorRef.value?.syncToModel?.();
+
+    const start = document.getElementById('event_start_date');
+    const end = document.getElementById('event_end_date');
+    if (start instanceof HTMLInputElement && start.value) {
+        props.form.event_start_date = start.value;
+    }
+    if (end instanceof HTMLInputElement && end.value) {
+        props.form.event_end_date = end.value;
+    }
+
+    if (!String(props.form.title || '').trim()) {
+        await showFormError('Enter a title.');
+        return;
+    }
+    if (!plainContent(props.form.content)) {
+        await showFormError('Enter the post content.');
+        return;
+    }
+    if (props.form.type === 'event' && !props.form.event_start_date) {
+        await showFormError('Choose a start date for this event.');
+        return;
+    }
+    if (props.form.type === 'event' && !['internal', 'external'].includes(props.form.event_visibility)) {
+        await showFormError('Choose whether this event is internal or external.');
+        return;
+    }
+
+    emit('submit');
+};
 
 // Clear targeting fields when audience changes
 watch(() => props.form.audience, (newAudience) => {
@@ -114,11 +162,12 @@ const audienceDescription = computed(() => {
 </script>
 
 <template>
-    <form @submit.prevent="emit('submit')" class="space-y-6">
+    <form @submit.prevent="submitForm" class="space-y-6">
         <!-- General Errors Display -->
-        <div v-if="Object.keys(form.errors).length > 0" class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h4 class="text-red-800 font-medium mb-2">Please fix the following errors:</h4>
-            <ul class="list-disc list-inside text-sm text-red-600 space-y-1">
+        <div v-if="localError || Object.keys(form.errors).length > 0" id="post-form-errors" class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p v-if="localError" class="text-sm text-red-700">{{ localError }}</p>
+            <h4 v-if="Object.keys(form.errors).length > 0" class="text-red-800 font-medium mb-2">Please fix the following errors:</h4>
+            <ul v-if="Object.keys(form.errors).length > 0" class="list-disc list-inside text-sm text-red-600 space-y-1">
                 <li v-for="(error, field) in form.errors" :key="field">
                     <strong>{{ field }}:</strong> {{ error }}
                 </li>
@@ -319,7 +368,6 @@ const audienceDescription = computed(() => {
                 v-model="form.title"
                 class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 placeholder="Enter a title..."
-                required
             />
             <p v-if="form.errors.title" class="mt-1 text-sm text-red-600">{{ form.errors.title }}</p>
         </div>
@@ -330,6 +378,7 @@ const audienceDescription = computed(() => {
                 Content <span class="text-red-500">*</span>
             </label>
             <WysiwygEditor
+                ref="editorRef"
                 v-model="form.content"
                 placeholder="Write your content here..."
                 min-height="240px"
@@ -391,21 +440,37 @@ const audienceDescription = computed(() => {
             <div class="border-t border-slate-200 pt-6">
                 <h3 class="text-lg font-serif font-semibold text-slate-900 mb-4">Event Details</h3>
                 
-                <!-- Public Event Toggle -->
-                <div class="bg-brand-50 border border-brand-200 rounded-lg p-4 mb-4">
-                    <label class="flex items-center cursor-pointer">
-                        <input
-                            type="checkbox"
-                            v-model="form.is_public"
-                            class="h-5 w-5 text-brand-600 focus:ring-brand-500 border-slate-300 rounded"
-                        />
-                        <div class="ml-3">
-                            <span class="font-medium text-brand-700">Public Event</span>
-                            <p class="text-sm text-brand-600 mt-0.5">
-                                Check this box to make this event visible on the public News & Events page. Unchecked events will only be visible in the portal.
-                            </p>
-                        </div>
-                    </label>
+                <div class="mb-4">
+                    <p class="block text-sm font-medium text-slate-700 mb-2">Who can see this event?</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <label
+                            :class="[
+                                'flex flex-col px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors',
+                                form.event_visibility === 'internal'
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                                    : 'border-slate-200 hover:border-slate-300'
+                            ]"
+                        >
+                            <input type="radio" v-model="form.event_visibility" value="internal" class="sr-only" />
+                            <span class="font-medium">Internal</span>
+                            <span class="text-sm mt-1">Staff only. Teachers and administrators can see this in the portal.</span>
+                        </label>
+                        <label
+                            :class="[
+                                'flex flex-col px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors',
+                                form.event_visibility === 'external'
+                                    ? 'border-brand-500 bg-brand-50 text-brand-800'
+                                    : 'border-slate-200 hover:border-slate-300'
+                            ]"
+                        >
+                            <input type="radio" v-model="form.event_visibility" value="external" class="sr-only" />
+                            <span class="font-medium">External</span>
+                            <span class="text-sm mt-1">Shown on the public News &amp; Events page and to families in the portal.</span>
+                        </label>
+                    </div>
+                    <p v-if="form.is_school_closure" class="mt-2 text-sm text-slate-500">
+                        School closures are also shown to families in the portal.
+                    </p>
                 </div>
                 
                 <!-- School Closure Toggle -->
@@ -436,7 +501,6 @@ const audienceDescription = computed(() => {
                             type="datetime-local"
                             v-model="form.event_start_date"
                             class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                            required
                         />
                         <p v-if="form.errors.event_start_date" class="mt-1 text-sm text-red-600">{{ form.errors.event_start_date }}</p>
                     </div>
@@ -565,8 +629,9 @@ const audienceDescription = computed(() => {
                 Cancel
             </a>
             <button
-                type="submit"
+                type="button"
                 :disabled="form.processing"
+                @click="submitForm"
                 class="px-6 py-2 bg-brand-600 text-white font-semibold rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
                 <span v-if="form.processing">Saving...</span>

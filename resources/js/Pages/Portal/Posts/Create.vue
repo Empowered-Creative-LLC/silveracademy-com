@@ -1,17 +1,23 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { nextTick } from 'vue';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import PostForm from '@/Components/Portal/PostForm.vue';
 
 const props = defineProps({
     grades: Array,
     teachers: Array,
+    initialType: {
+        type: String,
+        default: 'news',
+    },
 });
 
 const form = useForm({
-    type: 'news',
+    type: props.initialType === 'event' ? 'event' : 'news',
     is_school_closure: false,
     is_public: false,
+    event_visibility: 'internal',
     audience: 'all',
     target_grade_id: null,
     target_teacher_id: null,
@@ -36,6 +42,11 @@ const submit = () => {
         publish_now: data.publish_now ? '1' : '0',
     })).post('/portal/posts', {
         forceFormData: true,
+        onError: () => {
+            nextTick(() => {
+                document.getElementById('post-form-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        },
     });
 };
 </script>

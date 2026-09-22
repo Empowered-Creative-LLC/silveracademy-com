@@ -20,11 +20,7 @@ class DashboardController extends Controller
         // Get counts for admin dashboard
         $studentCount = Student::count();
         $staffCount = User::whereIn('role', [User::ROLE_TEACHER, User::ROLE_ADMIN, User::ROLE_SUPER_ADMIN])->count();
-        $upcomingEventsCount = Post::where('type', 'event')
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now())
-            ->where('event_start_date', '>=', now())
-            ->count();
+        $upcomingEventsCount = $this->visibleEvents($user)->count();
 
         // Get this week's lunch menus (Monday-Friday)
         $monday = Carbon::now()->startOfWeek();
@@ -44,11 +40,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Get upcoming events (from Posts) - show all events in portal (both public and private)
-        $upcomingEvents = Post::where('type', 'event')
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now())
-            ->where('event_start_date', '>=', now())
+        $upcomingEvents = $this->visibleEvents($user)
             ->orderBy('event_start_date', 'asc')
             ->take(5)
             ->get();
@@ -160,5 +152,21 @@ class DashboardController extends Controller
             'staffCount' => $staffCount,
             'upcomingEventsCount' => $upcomingEventsCount,
         ]);
+    }
+
+    /**
+     * External events are visible to families. Internal events are staff only.
+     */
+    private function visibleEvents(User $user)
+    {
+        $events = Post::query()->events()->published()->upcoming();
+
+        if (! $user->isStaff()) {
+            $events->where(function ($query) {
+                $query->where('audience', 'all')->orWhereNull('audience');
+            });
+        }
+
+        return $events;
     }
 }

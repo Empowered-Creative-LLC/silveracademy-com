@@ -710,7 +710,7 @@ const listEmptyMessage = computed(() => {
                         <!-- Add event button -->
                         <Link 
                             v-if="currentView === 'events' || currentView === 'both'"
-                            href="/portal/posts/create" 
+                            href="/portal/posts/create?type=event" 
                             class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                         >
                             Add event
@@ -736,7 +736,7 @@ const listEmptyMessage = computed(() => {
                                 <div class="py-1">
                                     <MenuItem v-if="currentView === 'events' || currentView === 'both'" v-slot="{ active }">
                                         <Link 
-                                            href="/portal/posts/create" 
+                                            href="/portal/posts/create?type=event" 
                                             :class="[active ? 'bg-slate-100 text-slate-900 outline-hidden' : 'text-slate-700', 'block px-4 py-2 text-sm']"
                                         >
                                             Create event

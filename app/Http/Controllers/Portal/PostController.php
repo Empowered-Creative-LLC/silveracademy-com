@@ -32,7 +32,7 @@ class PostController extends Controller
     /**
      * Show the form for creating a new post.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $grades = Grade::orderBy('sort_order')->get(['id', 'name']);
         $teachers = User::where('role', User::ROLE_TEACHER)
@@ -42,6 +42,7 @@ class PostController extends Controller
         return Inertia::render('Portal/Posts/Create', [
             'grades' => $grades,
             'teachers' => $teachers,
+            'initialType' => $request->query('type') === 'event' ? 'event' : 'news',
         ]);
     }
 
@@ -50,10 +51,13 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
+        $this->normalizePostInput($request);
+
         $validated = $request->validate([
             'type' => 'required|in:news,event',
             'is_school_closure' => 'boolean',
             'is_public' => 'boolean',
+            'event_visibility' => 'nullable|in:internal,external',
             'audience' => 'nullable|in:all,teachers_only,grade_teachers,specific_teacher',
             'target_grade_id' => 'nullable|exists:grades,id',
             'target_teacher_id' => 'nullable|exists:users,id',
@@ -74,23 +78,7 @@ class PostController extends Controller
             $imagePath = $request->file('image')->store('posts', 'public');
         }
 
-        // Determine target fields based on audience
-        $targetGradeId = null;
-        $targetTeacherId = null;
-        
-        if ($validated['audience'] === 'grade_teachers' && !empty($validated['target_grade_id'])) {
-            $targetGradeId = $validated['target_grade_id'];
-        } elseif ($validated['audience'] === 'specific_teacher' && !empty($validated['target_teacher_id'])) {
-            $targetTeacherId = $validated['target_teacher_id'];
-        }
-
-        // For school closures, force audience to 'all'
-        $audience = $validated['audience'] ?? 'all';
-        if ($request->boolean('is_school_closure')) {
-            $audience = 'all';
-            $targetGradeId = null;
-            $targetTeacherId = null;
-        }
+        [$isPublic, $audience, $targetGradeId, $targetTeacherId] = $this->resolvedVisibility($validated, $request);
 
         // Parse datetime-local input as Eastern Time and store as-is (app timezone is America/New_York)
         // so Laravel persists and reads the same wall-clock time without misinterpretation
@@ -107,7 +95,7 @@ class PostController extends Controller
             'user_id' => $request->user()->id,
             'type' => $validated['type'],
             'is_school_closure' => $request->boolean('is_school_closure'),
-            'is_public' => $request->boolean('is_public', false),
+            'is_public' => $isPublic,
             'audience' => $audience,
             'target_grade_id' => $targetGradeId,
             'target_teacher_id' => $targetTeacherId,
@@ -150,10 +138,13 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
+        $this->normalizePostInput($request);
+
         $validated = $request->validate([
             'type' => 'required|in:news,event',
             'is_school_closure' => 'boolean',
             'is_public' => 'boolean',
+            'event_visibility' => 'nullable|in:internal,external',
             'audience' => 'nullable|in:all,teachers_only,grade_teachers,specific_teacher',
             'target_grade_id' => 'nullable|exists:grades,id',
             'target_teacher_id' => 'nullable|exists:users,id',
@@ -185,23 +176,7 @@ class PostController extends Controller
             $imagePath = $request->file('image')->store('posts', 'public');
         }
 
-        // Determine target fields based on audience
-        $targetGradeId = null;
-        $targetTeacherId = null;
-        
-        if ($validated['audience'] === 'grade_teachers' && !empty($validated['target_grade_id'])) {
-            $targetGradeId = $validated['target_grade_id'];
-        } elseif ($validated['audience'] === 'specific_teacher' && !empty($validated['target_teacher_id'])) {
-            $targetTeacherId = $validated['target_teacher_id'];
-        }
-
-        // For school closures, force audience to 'all'
-        $audience = $validated['audience'] ?? 'all';
-        if ($request->boolean('is_school_closure')) {
-            $audience = 'all';
-            $targetGradeId = null;
-            $targetTeacherId = null;
-        }
+        [$isPublic, $audience, $targetGradeId, $targetTeacherId] = $this->resolvedVisibility($validated, $request);
 
         // Parse datetime-local input as Eastern Time and store as-is (app timezone is America/New_York)
         $eventStartDate = null;
@@ -216,7 +191,7 @@ class PostController extends Controller
         $post->update([
             'type' => $validated['type'],
             'is_school_closure' => $request->boolean('is_school_closure'),
-            'is_public' => $request->boolean('is_public', false),
+            'is_public' => $isPublic,
             'audience' => $audience,
             'target_grade_id' => $targetGradeId,
             'target_teacher_id' => $targetTeacherId,
@@ -281,6 +256,98 @@ class PostController extends Controller
         $status = $post->published_at ? 'published' : 'unpublished';
 
         return back()->with('success', "Post {$status} successfully.");
+    }
+
+    /**
+     * News keeps its audience. Events are either internal (staff only) or external (public).
+     *
+     * @return array{0: bool, 1: string, 2: int|null, 3: int|null}
+     */
+    private function resolvedVisibility(array $validated, Request $request): array
+    {
+        $targetGradeId = null;
+        $targetTeacherId = null;
+        $audience = $validated['audience'] ?? 'all';
+
+        if ($audience === 'grade_teachers' && ! empty($validated['target_grade_id'])) {
+            $targetGradeId = $validated['target_grade_id'];
+        } elseif ($audience === 'specific_teacher' && ! empty($validated['target_teacher_id'])) {
+            $targetTeacherId = $validated['target_teacher_id'];
+        }
+
+        $isPublic = $request->boolean('is_public', false);
+
+        if (($validated['type'] ?? null) === 'event') {
+            if (($validated['event_visibility'] ?? 'internal') === 'external') {
+                $isPublic = true;
+                $audience = 'all';
+                $targetGradeId = null;
+                $targetTeacherId = null;
+            } else {
+                $isPublic = false;
+                $audience = 'teachers_only';
+                $targetGradeId = null;
+                $targetTeacherId = null;
+            }
+        }
+
+        if ($request->boolean('is_school_closure')) {
+            $audience = 'all';
+            $targetGradeId = null;
+            $targetTeacherId = null;
+        }
+
+        return [$isPublic, $audience, $targetGradeId, $targetTeacherId];
+    }
+
+    /**
+     * Turn blank FormData placeholders into null before validation.
+     * Nullable ids, dates, and URLs otherwise fail when submitted as "" or "null".
+     */
+    private function normalizePostInput(Request $request): void
+    {
+        $blank = ['', 'null', 'undefined'];
+        $merged = [];
+
+        foreach ([
+            'audience',
+            'target_grade_id',
+            'target_teacher_id',
+            'event_start_date',
+            'event_end_date',
+            'button_text',
+            'button_url',
+            'recurrence_type',
+            'recurrence_end_date',
+            'event_visibility',
+        ] as $field) {
+            if (! $request->exists($field)) {
+                continue;
+            }
+
+            $value = $request->input($field);
+            if (is_string($value)) {
+                $value = trim($value);
+            }
+
+            if ($value === null || in_array($value, $blank, true)) {
+                $merged[$field] = null;
+            } elseif (is_string($value)) {
+                $merged[$field] = $value;
+            }
+        }
+
+        if (! $request->hasFile('image')) {
+            $image = $request->input('image');
+            $image = is_string($image) ? trim($image) : $image;
+            if ($image === null || in_array($image, $blank, true)) {
+                $merged['image'] = null;
+            }
+        }
+
+        if ($merged !== []) {
+            $request->merge($merged);
+        }
     }
 }
 

@@ -29,11 +29,14 @@ class CalendarController extends Controller
         $calendarEvents = CalendarEvent::orderBy('event_date', 'asc')
             ->get();
 
-        // Get events from the Post model (published events)
-        $posts = Post::where('type', 'event')
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now())
-            ->get();
+        // Published events. Internal events are staff-only.
+        $posts = Post::query()->events()->published();
+        if (! $request->user()?->isStaff()) {
+            $posts->where(function ($query) {
+                $query->where('audience', 'all')->orWhereNull('audience');
+            });
+        }
+        $posts = $posts->get();
 
         // Generate event instances (including recurring)
         $postEvents = collect();
