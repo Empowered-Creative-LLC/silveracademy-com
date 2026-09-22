@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Grade;
 use App\Models\Post;
 use App\Models\User;
 use Carbon\Carbon;
@@ -49,6 +50,30 @@ class PostSaveTest extends TestCase
         $this->assertNotNull($post->published_at);
         $this->assertNull($post->target_grade_id);
         $this->assertNull($post->button_url);
+    }
+
+    public function test_grade_level_news_is_saved_for_the_selected_grade(): void
+    {
+        $admin = $this->admin();
+        $grade = Grade::create([
+            'name' => 'Kindergarten',
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->post('/portal/posts', $this->payload([
+                'type' => 'news',
+                'title' => 'Kindergarten note',
+                'audience' => 'grade_teachers',
+                'target_grade_id' => (string) $grade->id,
+            ]))
+            ->assertRedirect(route('portal.posts.index'));
+
+        $post = Post::where('title', 'Kindergarten note')->first();
+
+        $this->assertNotNull($post);
+        $this->assertSame('grade_teachers', $post->audience);
+        $this->assertSame($grade->id, (int) $post->target_grade_id);
     }
 
     public function test_empty_news_content_is_rejected_and_not_saved(): void
