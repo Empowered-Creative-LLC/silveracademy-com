@@ -1,17 +1,17 @@
 <?php
 
-namespace Database\Seeders;
-
 use App\Models\Grade;
-use Illuminate\Database\Seeder;
+use Illuminate\Database\Migrations\Migration;
 
-class GradeSeeder extends Seeder
+return new class extends Migration
 {
-    /**
-     * Run the database seeds.
-     */
-    public function run(): void
+    public function up(): void
     {
+        $renamed = Grade::where('name', 'Early Learning Program')->first();
+        if ($renamed && ! Grade::where('name', 'Early Learners (Preschool)')->exists()) {
+            $renamed->update(['name' => 'Early Learners (Preschool)']);
+        }
+
         $grades = [
             ['name' => 'Early Learners (Preschool)', 'sort_order' => 1],
             ['name' => 'Ganeinu (Preschool)', 'sort_order' => 2],
@@ -32,10 +32,12 @@ class GradeSeeder extends Seeder
                 $grade
             );
         }
-
-        $this->command->info('Grade levels seeded successfully.');
     }
-}
 
-
-
+    public function down(): void
+    {
+        Grade::where('name', 'Early Learners (Preschool)')
+            ->whereDoesntHave('students')
+            ->delete();
+    }
+};
