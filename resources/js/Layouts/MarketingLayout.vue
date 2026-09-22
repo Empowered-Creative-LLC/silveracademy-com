@@ -322,7 +322,7 @@ const socialLinks = [
                                     Mailing: PO Box 60097, Harrisburg, PA 17106
                                 </p>
                                 <p class="mt-1 text-sm text-slate-600">
-                                    <a href="mailto:info@silveracademypa.org" class="text-brand-600 hover:text-brand-700 transition-colors">info@silveracademypa.org</a>
+                                    <a href="mailto:office@silveracademypa.org" class="text-brand-600 hover:text-brand-700 transition-colors">office@silveracademypa.org</a>
                                     <span class="mx-2">|</span>
                                     <a href="tel:717-769-5870" class="text-brand-600 hover:text-brand-700 transition-colors">717-769-5870</a>
                                 </p>
