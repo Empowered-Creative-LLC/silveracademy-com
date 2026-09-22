@@ -195,8 +195,7 @@ const getEventsForDate = (dateStr) => {
     const dayEvents = [];
     
     props.events.forEach(event => {
-        const eventDate = event.event_date_key || eventDateKey(event.event_date);
-        if (eventDate === dateStr) {
+        if (eventOccursOnDate(event, dateStr)) {
             dayEvents.push({
                 id: `event-${event.id}`,
                 name: event.title,
@@ -215,6 +214,16 @@ const getEventsForDate = (dateStr) => {
     });
     
     return dayEvents;
+};
+
+const eventOccursOnDate = (event, dateStr) => {
+    const start = event.event_date_key || eventDateKey(event.event_date);
+    if (!start) return false;
+    if (event.is_recurring) {
+        return start === dateStr;
+    }
+    const end = event.event_end_date_key || (event.event_end_date ? eventDateKey(event.event_end_date) : start);
+    return dateStr >= start && dateStr <= (end || start);
 };
 
 const eventDateKey = (datetime) => {
@@ -513,7 +522,13 @@ const listItemsForCurrentMonth = computed(() => {
     if (currentView.value === 'events' || currentView.value === 'both') {
         props.events.forEach((event) => {
             const dateKey = event.event_date_key || eventDateKey(event.event_date);
-            if (!dateKeyMatchesMonth(dateKey, month, year)) return;
+            const endKey = event.is_recurring
+                ? dateKey
+                : (event.event_end_date_key || (event.event_end_date ? eventDateKey(event.event_end_date) : dateKey));
+            const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+            const monthEndDate = new Date(year, month + 1, 0);
+            const monthEnd = formatDate(monthEndDate);
+            if (!dateKey || endKey < monthStart || dateKey > monthEnd) return;
 
             items.push({
                 id: `event-${event.id}`,
@@ -710,7 +725,7 @@ const listEmptyMessage = computed(() => {
                         <!-- Add event button -->
                         <Link 
                             v-if="currentView === 'events' || currentView === 'both'"
-                            href="/portal/posts/create" 
+                            href="/portal/posts/create?type=event" 
                             class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                         >
                             Add event
@@ -736,7 +751,7 @@ const listEmptyMessage = computed(() => {
                                 <div class="py-1">
                                     <MenuItem v-if="currentView === 'events' || currentView === 'both'" v-slot="{ active }">
                                         <Link 
-                                            href="/portal/posts/create" 
+                                            href="/portal/posts/create?type=event" 
                                             :class="[active ? 'bg-slate-100 text-slate-900 outline-hidden' : 'text-slate-700', 'block px-4 py-2 text-sm']"
                                         >
                                             Create event

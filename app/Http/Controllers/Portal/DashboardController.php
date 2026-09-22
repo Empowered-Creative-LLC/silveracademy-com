@@ -20,10 +20,9 @@ class DashboardController extends Controller
         // Get counts for admin dashboard
         $studentCount = Student::count();
         $staffCount = User::whereIn('role', [User::ROLE_TEACHER, User::ROLE_ADMIN, User::ROLE_SUPER_ADMIN])->count();
-        $upcomingEventsCount = Post::where('type', 'event')
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now())
-            ->where('event_start_date', '>=', now())
+        $upcomingEventsCount = Post::query()
+            ->published()
+            ->upcoming()
             ->count();
 
         // Get this week's lunch menus (Monday-Friday)
@@ -45,10 +44,9 @@ class DashboardController extends Controller
             });
 
         // Get upcoming events (from Posts) - show all events in portal (both public and private)
-        $upcomingEvents = Post::where('type', 'event')
-            ->whereNotNull('published_at')
-            ->where('published_at', '<=', now())
-            ->where('event_start_date', '>=', now())
+        $upcomingEvents = Post::query()
+            ->published()
+            ->upcoming()
             ->orderBy('event_start_date', 'asc')
             ->take(5)
             ->get();

@@ -6,10 +6,14 @@ import PostForm from '@/Components/Portal/PostForm.vue';
 const props = defineProps({
     grades: Array,
     teachers: Array,
+    initialType: {
+        type: String,
+        default: 'news',
+    },
 });
 
 const form = useForm({
-    type: 'news',
+    type: props.initialType === 'event' ? 'event' : 'news',
     is_school_closure: false,
     is_public: false,
     audience: 'all',
@@ -36,6 +40,9 @@ const submit = () => {
         publish_now: data.publish_now ? '1' : '0',
     })).post('/portal/posts', {
         forceFormData: true,
+        onError: () => {
+            document.getElementById('post-form-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        },
     });
 };
 </script>
