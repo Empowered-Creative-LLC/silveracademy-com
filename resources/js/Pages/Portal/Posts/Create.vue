@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { nextTick } from 'vue';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import PostForm from '@/Components/Portal/PostForm.vue';
 
@@ -16,6 +17,7 @@ const form = useForm({
     type: props.initialType === 'event' ? 'event' : 'news',
     is_school_closure: false,
     is_public: false,
+    event_visibility: 'internal',
     audience: 'all',
     target_grade_id: null,
     target_teacher_id: null,
@@ -41,7 +43,9 @@ const submit = () => {
     })).post('/portal/posts', {
         forceFormData: true,
         onError: () => {
-            document.getElementById('post-form-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            nextTick(() => {
+                document.getElementById('post-form-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
         },
     });
 };

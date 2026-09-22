@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { nextTick } from 'vue';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import PostForm from '@/Components/Portal/PostForm.vue';
 
@@ -46,6 +47,9 @@ const form = useForm({
     type: props.post.type,
     is_school_closure: props.post.is_school_closure || false,
     is_public: props.post.is_public || false,
+    event_visibility: props.post.is_public
+        ? 'external'
+        : (['teachers_only', 'grade_teachers', 'specific_teacher'].includes(props.post.audience) ? 'internal' : 'external'),
     audience: props.post.audience || 'all',
     target_grade_id: props.post.target_grade_id || null,
     target_teacher_id: props.post.target_teacher_id || null,
@@ -70,6 +74,11 @@ const submit = () => {
         is_school_closure: data.is_school_closure ? '1' : '0',
     })).post(`/portal/posts/${props.post.slug}`, {
         forceFormData: true,
+        onError: () => {
+            nextTick(() => {
+                document.getElementById('post-form-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        },
     });
 };
 </script>

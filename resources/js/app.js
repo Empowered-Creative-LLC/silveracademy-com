@@ -7,6 +7,20 @@ import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 const appName = import.meta.env.VITE_APP_NAME || 'Silver Academy';
 
 // On 419 (CSRF/session expired), show message and reload so the user gets a fresh token
+router.on('navigate', (event) => {
+    const token = event.detail?.page?.props?.csrf_token;
+    if (typeof token !== 'string' || token === '') {
+        return;
+    }
+    const meta = document.head.querySelector('meta[name="csrf-token"]');
+    if (meta) {
+        meta.setAttribute('content', token);
+    }
+    if (window.axios?.defaults?.headers?.common) {
+        window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token;
+    }
+});
+
 router.on('invalid', (event) => {
     const response = event.detail?.response;
     if (response?.status === 419) {

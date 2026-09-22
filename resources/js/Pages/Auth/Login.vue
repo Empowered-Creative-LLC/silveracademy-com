@@ -24,6 +24,7 @@ const firstValidationError = computed(() => {
 });
 
 const genericError = ref('');
+const flashError = computed(() => page.props.flash?.error || '');
 
 const submit = () => {
     genericError.value = '';
@@ -64,8 +65,8 @@ const submit = () => {
             {{ status }}
         </div>
 
-        <div v-if="genericError || firstValidationError" class="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 text-center">
-            {{ genericError || firstValidationError }}
+        <div v-if="genericError || firstValidationError || flashError" class="mb-4 p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 text-center">
+            {{ genericError || firstValidationError || flashError }}
         </div>
 
         <form @submit.prevent="submit" class="space-y-6" novalidate>

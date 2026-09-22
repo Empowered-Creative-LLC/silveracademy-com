@@ -115,7 +115,8 @@ class PortalFixesTest extends TestCase
         $post = Post::where('title', 'test')->first();
         $this->assertNotNull($post);
         $this->assertSame('event', $post->type);
-        $this->assertSame('all', $post->audience);
+        $this->assertSame('teachers_only', $post->audience);
+        $this->assertFalse($post->is_public);
         $this->assertNotNull($post->published_at);
         $this->assertSame('2026-09-17 13:19:00', $post->event_start_date->format('Y-m-d H:i:s'));
 
