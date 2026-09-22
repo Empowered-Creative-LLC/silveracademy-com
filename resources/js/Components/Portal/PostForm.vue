@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import WysiwygEditor from './WysiwygEditor.vue';
 
 const props = defineProps({
@@ -23,6 +23,47 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['submit']);
+
+const wysiwygRef = ref(null);
+const startDateRef = ref(null);
+const endDateRef = ref(null);
+const localError = ref('');
+
+const showLocalError = (message) => {
+    localError.value = message;
+    nextTick(() => {
+        document.getElementById('post-form-errors')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+};
+
+const submitForm = () => {
+    localError.value = '';
+    wysiwygRef.value?.syncToModel();
+
+    if (props.form.type === 'event') {
+        if (startDateRef.value?.value) {
+            props.form.event_start_date = startDateRef.value.value;
+        }
+        if (endDateRef.value?.value) {
+            props.form.event_end_date = endDateRef.value.value;
+        }
+        if (!props.form.audience) {
+            props.form.audience = 'all';
+        }
+        if (!props.form.event_start_date) {
+            showLocalError('Choose a start date for this event.');
+            return;
+        }
+    }
+
+    const contentText = String(props.form.content || '').replace(/<[^>]*>/g, '').trim();
+    if (!contentText) {
+        showLocalError('Add some content before saving.');
+        return;
+    }
+
+    emit('submit');
+};
 
 const imagePreview = ref(props.post?.image_path ? `/storage/${props.post.image_path}` : null);
 const dragActive = ref(false);
@@ -58,6 +99,9 @@ const removeImage = () => {
 
 // Clear event fields when switching to news
 watch(() => props.form.type, (newType) => {
+    if (newType === 'event' && !props.form.audience) {
+        props.form.audience = 'all';
+    }
     if (newType === 'news') {
         props.form.event_start_date = '';
         props.form.event_end_date = '';
@@ -114,15 +158,18 @@ const audienceDescription = computed(() => {
 </script>
 
 <template>
-    <form @submit.prevent="emit('submit')" class="space-y-6">
+    <form @submit.prevent="submitForm" class="space-y-6">
         <!-- General Errors Display -->
-        <div v-if="Object.keys(form.errors).length > 0" class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <h4 class="text-red-800 font-medium mb-2">Please fix the following errors:</h4>
-            <ul class="list-disc list-inside text-sm text-red-600 space-y-1">
-                <li v-for="(error, field) in form.errors" :key="field">
-                    <strong>{{ field }}:</strong> {{ error }}
-                </li>
-            </ul>
+        <div v-if="localError || Object.keys(form.errors).length > 0" id="post-form-errors" class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p v-if="localError" class="text-sm text-red-600">{{ localError }}</p>
+            <template v-if="Object.keys(form.errors).length > 0">
+                <h4 class="text-red-800 font-medium mb-2">Please fix the following errors:</h4>
+                <ul class="list-disc list-inside text-sm text-red-600 space-y-1">
+                    <li v-for="(error, field) in form.errors" :key="field">
+                        <strong>{{ field }}:</strong> {{ error }}
+                    </li>
+                </ul>
+            </template>
         </div>
 
         <!-- Post Type -->
@@ -330,6 +377,7 @@ const audienceDescription = computed(() => {
                 Content <span class="text-red-500">*</span>
             </label>
             <WysiwygEditor
+                ref="wysiwygRef"
                 v-model="form.content"
                 placeholder="Write your content here..."
                 min-height="240px"
@@ -433,6 +481,7 @@ const audienceDescription = computed(() => {
                         </label>
                         <input
                             id="event_start_date"
+                            ref="startDateRef"
                             type="datetime-local"
                             v-model="form.event_start_date"
                             class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
@@ -446,6 +495,7 @@ const audienceDescription = computed(() => {
                         </label>
                         <input
                             id="event_end_date"
+                            ref="endDateRef"
                             type="datetime-local"
                             v-model="form.event_end_date"
                             class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"

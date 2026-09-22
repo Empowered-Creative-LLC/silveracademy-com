@@ -135,6 +135,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
     syncToModel();
 });
+
+defineExpose({ syncToModel });
 </script>
 
 <template>
