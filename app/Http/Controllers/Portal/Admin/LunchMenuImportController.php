@@ -27,29 +27,31 @@ class LunchMenuImportController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120'], // 5MB max
+            'file' => ['required', 'file', 'max:5120'],
         ]);
 
+        $extension = strtolower($request->file('file')->getClientOriginalExtension());
+        if (! in_array($extension, ['xlsx', 'xls', 'csv'], true)) {
+            return back()->withErrors([
+                'file' => 'Please upload an .xlsx, .xls, or .csv file.',
+            ]);
+        }
+
         $import = new LunchMenuImport(auth()->id());
-        
+
         try {
             Excel::import($import, $request->file('file'));
-            
+
             $stats = $import->getStats();
-            $errors = $import->getErrors();
-            
-            return back()->with([
-                'success' => true,
-                'message' => "Import completed! Created: {$stats['created']}, Updated: {$stats['updated']}, Skipped: {$stats['skipped']}.",
-                'stats' => $stats,
-                'errors' => $errors,
-            ]);
+            $notices = $import->getErrors();
+            $message = "Import completed. Created: {$stats['created']}, Updated: {$stats['updated']}, Skipped: {$stats['skipped']}.";
+
+            return redirect()
+                ->route('portal.calendar', ['view' => 'lunch'])
+                ->with('success', $message)
+                ->with('import_notices', $notices);
         } catch (\Exception $e) {
-            return back()->with([
-                'success' => false,
-                'message' => 'Import failed: ' . $e->getMessage(),
-                'errors' => [$e->getMessage()],
-            ]);
+            return back()->with('error', 'Import failed: '.$e->getMessage());
         }
     }
 

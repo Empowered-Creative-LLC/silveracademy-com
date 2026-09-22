@@ -70,11 +70,7 @@ class PortalFixesTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)
-            ->withHeaders([
-                'X-Inertia' => 'true',
-                'X-Inertia-Version' => app(\App\Http\Middleware\HandleInertiaRequests::class)->version(request()),
-                'X-Requested-With' => 'XMLHttpRequest',
-            ])
+            ->withHeaders($this->inertiaHeaders())
             ->get('/portal/calendar');
 
         $response->assertOk();
@@ -85,5 +81,123 @@ class PortalFixesTest extends TestCase
         $this->assertNotNull($event);
         $this->assertSame('2026-08-25', $event['event_date_key']);
         $this->assertStringStartsWith('2026-08-25', $event['event_date']);
+    }
+
+    public function test_portal_event_form_submission_is_saved_and_shown_on_calendar(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'is_approved' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->post('/portal/posts', [
+            'type' => 'event',
+            'is_school_closure' => '0',
+            'is_public' => '0',
+            'audience' => 'all',
+            'target_grade_id' => '',
+            'target_teacher_id' => '',
+            'title' => 'test',
+            'content' => 'test',
+            'image' => '',
+            'event_start_date' => '2026-09-17T13:19',
+            'event_end_date' => '',
+            'button_text' => '',
+            'button_url' => '',
+            'recurrence_type' => 'none',
+            'recurrence_end_date' => '',
+            'publish_now' => '1',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('portal.posts.index'));
+
+        $post = Post::where('title', 'test')->first();
+        $this->assertNotNull($post);
+        $this->assertSame('event', $post->type);
+        $this->assertSame('teachers_only', $post->audience);
+        $this->assertFalse($post->is_public);
+        $this->assertNotNull($post->published_at);
+        $this->assertSame('2026-09-17 13:19:00', $post->event_start_date->format('Y-m-d H:i:s'));
+
+        $calendar = $this->actingAs($admin)
+            ->withHeaders($this->inertiaHeaders())
+            ->get('/portal/calendar');
+
+        $calendar->assertOk();
+        $event = collect($calendar->json('props.events'))->firstWhere('title', 'test');
+        $this->assertNotNull($event);
+        $this->assertSame('2026-09-17', $event['event_date_key']);
+    }
+
+    public function test_event_form_accepts_empty_nullable_fields_sent_as_null_strings(): void
+    {
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'is_approved' => true,
+        ]);
+
+        $response = $this->actingAs($admin)->post('/portal/posts', [
+            'type' => 'event',
+            'is_school_closure' => '0',
+            'is_public' => '0',
+            'audience' => '',
+            'target_grade_id' => 'null',
+            'target_teacher_id' => 'null',
+            'title' => 'Open House Night',
+            'content' => '<div>test</div>',
+            'image' => 'null',
+            'event_start_date' => '2026-09-17T13:19',
+            'event_end_date' => 'null',
+            'button_text' => '',
+            'button_url' => 'null',
+            'recurrence_type' => 'none',
+            'recurrence_end_date' => '',
+            'publish_now' => '1',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertNotNull(Post::where('title', 'Open House Night')->first());
+    }
+
+    public function test_upcoming_scope_includes_events_later_the_same_day(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-10 09:00:00', 'America/New_York'));
+
+        $admin = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'is_approved' => true,
+        ]);
+
+        Post::create([
+            'user_id' => $admin->id,
+            'type' => 'event',
+            'audience' => 'all',
+            'title' => 'Afternoon Assembly',
+            'content' => 'Gather in the gym',
+            'event_start_date' => Carbon::parse('2026-09-10 12:30:00', 'America/New_York'),
+            'published_at' => now(),
+            'is_public' => true,
+        ]);
+
+        try {
+            $this->assertTrue(
+                Post::query()->upcoming()->where('title', 'Afternoon Assembly')->exists()
+            );
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    private function inertiaHeaders(): array
+    {
+        $version = app(\App\Http\Middleware\HandleInertiaRequests::class)
+            ->version(request());
+
+        return [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => (string) $version,
+            'X-Requested-With' => 'XMLHttpRequest',
+        ];
     }
 }

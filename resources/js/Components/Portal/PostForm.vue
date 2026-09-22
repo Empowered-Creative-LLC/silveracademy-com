@@ -60,6 +60,9 @@ const removeImage = () => {
 
 // Clear event fields when switching to news
 watch(() => props.form.type, (newType) => {
+    if (newType === 'event' && !props.form.audience) {
+        props.form.audience = 'all';
+    }
     if (newType === 'news') {
         props.form.event_start_date = '';
         props.form.event_end_date = '';

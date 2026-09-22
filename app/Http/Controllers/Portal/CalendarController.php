@@ -58,6 +58,9 @@ class CalendarController extends Controller
                         'event_end_date' => $post->event_end_date
                             ? $post->event_end_date->copy()->timezone(config('app.timezone'))->format('Y-m-d\TH:i:s')
                             : null,
+                        'event_end_date_key' => $post->event_end_date
+                            ? $post->event_end_date->copy()->timezone(config('app.timezone'))->format('Y-m-d')
+                            : null,
                         'description' => $post->content,
                         'button_text' => $post->button_text,
                         'button_url' => $post->button_url,
@@ -82,6 +85,7 @@ class CalendarController extends Controller
                     'event_date' => $start?->format('Y-m-d\TH:i:s'),
                     'event_date_key' => $start?->format('Y-m-d'),
                     'event_end_date' => $end?->format('Y-m-d\TH:i:s'),
+                    'event_end_date_key' => $end?->format('Y-m-d'),
                     'description' => $post->content,
                     'button_text' => $post->button_text,
                     'button_url' => $post->button_url,

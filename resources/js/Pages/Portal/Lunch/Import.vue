@@ -22,7 +22,7 @@ const fileInput = ref(null);
 const selectedFileName = ref('');
 
 const flash = computed(() => page.props.flash || {});
-const hasErrors = computed(() => flash.value.errors && flash.value.errors.length > 0);
+const hasErrors = computed(() => flash.value.import_notices && flash.value.import_notices.length > 0);
 
 const handleDragEnter = (e) => {
     e.preventDefault();
@@ -114,20 +114,20 @@ const submit = () => {
                     <CheckCircleIcon class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                     <div>
                         <p class="font-medium text-green-800">{{ flash.message }}</p>
-                        <div v-if="flash.stats" class="mt-2 text-sm text-green-700">
-                            <p>Created: {{ flash.stats.created }} menus</p>
-                            <p>Updated: {{ flash.stats.updated }} menus</p>
-                            <p v-if="flash.stats.skipped">Skipped: {{ flash.stats.skipped }} rows</p>
+                        <div v-if="flash.import_stats" class="mt-2 text-sm text-green-700">
+                            <p>Created: {{ flash.import_stats.created }} menus</p>
+                            <p>Updated: {{ flash.import_stats.updated }} menus</p>
+                            <p v-if="flash.import_stats.skipped">Skipped: {{ flash.import_stats.skipped }} rows</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div v-if="flash.success === false" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div v-if="flash.success === false || flash.error" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                 <div class="flex items-start gap-3">
                     <ExclamationCircleIcon class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                     <div>
-                        <p class="font-medium text-red-800">{{ flash.message }}</p>
+                        <p class="font-medium text-red-800">{{ flash.error || flash.message }}</p>
                     </div>
                 </div>
             </div>
@@ -138,7 +138,7 @@ const submit = () => {
                     <div>
                         <p class="font-medium text-amber-800 mb-2">Import Notices</p>
                         <ul class="text-sm text-amber-700 space-y-1">
-                            <li v-for="(error, index) in flash.errors" :key="index">{{ error }}</li>
+                            <li v-for="(error, index) in flash.import_notices" :key="index">{{ error }}</li>
                         </ul>
                     </div>
                 </div>

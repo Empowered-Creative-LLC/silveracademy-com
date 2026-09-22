@@ -40,7 +40,7 @@ return [
         'from_email' => env('SENDGRID_FROM_EMAIL', 'noreply@silveracademypa.org'),
         'from_name' => env('SENDGRID_FROM_NAME', 'Silver Academy Website'),
         'child_portal_from_name' => env('SENDGRID_CHILD_PORTAL_FROM_NAME', 'Silver Academy Child Portal'),
-        'to_email' => env('SENDGRID_TO_EMAIL', 'info@silveracademypa.org'),
+        'to_email' => env('SENDGRID_TO_EMAIL', 'office@silveracademypa.org'),
         'to_name' => env('SENDGRID_TO_NAME', 'Silver Academy'),
     ],
 

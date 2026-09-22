@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import { Menu, MenuButton, MenuItem, MenuItems, Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
 import {
@@ -11,6 +11,8 @@ import {
 } from '@heroicons/vue/20/solid';
 import { CalendarIcon, XMarkIcon, PencilIcon, TrashIcon, PlusIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+
+const page = usePage();
 
 const props = defineProps({
     events: {
@@ -195,8 +197,7 @@ const getEventsForDate = (dateStr) => {
     const dayEvents = [];
     
     props.events.forEach(event => {
-        const eventDate = event.event_date_key || eventDateKey(event.event_date);
-        if (eventDate === dateStr) {
+        if (eventOccursOnDate(event, dateStr)) {
             dayEvents.push({
                 id: `event-${event.id}`,
                 name: event.title,
@@ -217,6 +218,16 @@ const getEventsForDate = (dateStr) => {
     return dayEvents;
 };
 
+const eventOccursOnDate = (event, dateStr) => {
+    const start = event.event_date_key || eventDateKey(event.event_date);
+    if (!start) return false;
+    if (event.is_recurring) {
+        return start === dateStr;
+    }
+    const end = event.event_end_date_key || (event.event_end_date ? eventDateKey(event.event_end_date) : start);
+    return dateStr >= start && dateStr <= (end || start);
+};
+
 const eventDateKey = (datetime) => {
     if (!datetime) return '';
     const raw = String(datetime);
@@ -227,9 +238,14 @@ const eventDateKey = (datetime) => {
     return date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 };
 
+const menuDateKey = (value) => {
+    const match = String(value ?? '').match(/^(\d{4}-\d{2}-\d{2})/);
+    return match ? match[1] : '';
+};
+
 // Get lunch menu for a specific date
 const getLunchMenuForDate = (dateStr) => {
-    return props.lunchMenus.find(menu => menu.menu_date === dateStr) || null;
+    return props.lunchMenus.find(menu => menuDateKey(menu.menu_date) === dateStr) || null;
 };
 
 // Format time from datetime
@@ -513,7 +529,13 @@ const listItemsForCurrentMonth = computed(() => {
     if (currentView.value === 'events' || currentView.value === 'both') {
         props.events.forEach((event) => {
             const dateKey = event.event_date_key || eventDateKey(event.event_date);
-            if (!dateKeyMatchesMonth(dateKey, month, year)) return;
+            const endKey = event.is_recurring
+                ? dateKey
+                : (event.event_end_date_key || (event.event_end_date ? eventDateKey(event.event_end_date) : dateKey));
+            const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+            const monthEndDate = new Date(year, month + 1, 0);
+            const monthEnd = formatDate(monthEndDate);
+            if (!dateKey || endKey < monthStart || dateKey > monthEnd) return;
 
             items.push({
                 id: `event-${event.id}`,
@@ -534,11 +556,12 @@ const listItemsForCurrentMonth = computed(() => {
 
     if (currentView.value === 'lunch' || currentView.value === 'both') {
         props.lunchMenus.forEach((menu) => {
-            if (!dateKeyMatchesMonth(menu.menu_date, month, year)) return;
+            const menuKey = menuDateKey(menu.menu_date);
+            if (!dateKeyMatchesMonth(menuKey, month, year)) return;
 
             items.push({
                 id: `lunch-${menu.id}`,
-                sortDate: menu.menu_date,
+                sortDate: menuKey,
                 itemType: 'lunch',
                 title: getMenuFirstLine(menu.content),
                 datetime: menu.menu_date,
@@ -580,6 +603,18 @@ const listEmptyMessage = computed(() => {
         </template>
         
         <div class="min-w-0 max-w-full overflow-x-hidden lg:flex lg:h-full lg:flex-col">
+            <div
+                v-if="page.props.flash?.success || page.props.flash?.message"
+                class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+            >
+                {{ typeof page.props.flash.success === 'string' ? page.props.flash.success : page.props.flash.message }}
+            </div>
+            <div
+                v-if="page.props.flash?.import_notices?.length"
+                class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            >
+                <p v-for="(notice, index) in page.props.flash.import_notices" :key="index">{{ notice }}</p>
+            </div>
             <header class="flex flex-col gap-4 border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:flex-none rounded-t-xl">
                 <div class="flex w-full flex-col gap-3">
                     <h1 class="text-base font-semibold text-slate-900">
