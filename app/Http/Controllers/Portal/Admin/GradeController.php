@@ -48,8 +48,8 @@ class GradeController extends Controller
     protected function seedGrades(): void
     {
         $grades = [
-            ['name' => 'Ganeinu (Preschool)', 'sort_order' => 1],
-            ['name' => 'Early Learning Program', 'sort_order' => 2],
+            ['name' => 'Early Learners (Preschool)', 'sort_order' => 1],
+            ['name' => 'Ganeinu (Preschool)', 'sort_order' => 2],
             ['name' => 'Kindergarten', 'sort_order' => 3],
             ['name' => '1st Grade', 'sort_order' => 4],
             ['name' => '2nd Grade', 'sort_order' => 5],
