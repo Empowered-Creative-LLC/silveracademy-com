@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\LunchMenu;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -53,16 +54,22 @@ class LunchMenuController extends Controller
         $this->authorizeAdmin();
 
         $validated = $request->validate([
-            'menu_date' => ['required', 'date', 'unique:lunch_menus,menu_date'],
+            'menu_date' => ['required', 'date'],
             'content' => ['required', 'string'],
-        ], [
-            'menu_date.unique' => 'A lunch menu already exists for this date.',
         ]);
+
+        $menuDate = $this->normalizeMenuDate($validated['menu_date']);
+
+        if (LunchMenu::forDate($menuDate)->exists()) {
+            return back()
+                ->withErrors(['menu_date' => 'A lunch menu already exists for this date.'])
+                ->withInput();
+        }
 
         LunchMenu::create([
             'user_id' => auth()->id(),
-            'menu_date' => $validated['menu_date'],
-            'content' => $validated['content'],
+            'menu_date' => $menuDate,
+            'content' => trim($validated['content']),
         ]);
 
         return redirect()->route('portal.calendar', ['view' => 'lunch'])
@@ -93,13 +100,23 @@ class LunchMenuController extends Controller
         $this->authorizeAdmin();
 
         $validated = $request->validate([
-            'menu_date' => ['required', 'date', 'unique:lunch_menus,menu_date,' . $lunch->id],
+            'menu_date' => ['required', 'date'],
             'content' => ['required', 'string'],
-        ], [
-            'menu_date.unique' => 'A lunch menu already exists for this date.',
         ]);
 
-        $lunch->update($validated);
+        $menuDate = $this->normalizeMenuDate($validated['menu_date']);
+        $taken = LunchMenu::forDate($menuDate)->whereKeyNot($lunch->id)->exists();
+
+        if ($taken) {
+            return back()
+                ->withErrors(['menu_date' => 'A lunch menu already exists for this date.'])
+                ->withInput();
+        }
+
+        $lunch->update([
+            'menu_date' => $menuDate,
+            'content' => trim($validated['content']),
+        ]);
 
         return redirect()->route('portal.calendar', ['view' => 'lunch'])
             ->with('success', 'Lunch menu updated successfully.');
@@ -140,6 +157,19 @@ class LunchMenuController extends Controller
             });
 
         return response()->json($menus);
+    }
+
+    /**
+     * Keep the calendar day the user picked. A datetime string must not shift
+     * that day into the previous evening when the app timezone is applied.
+     */
+    protected function normalizeMenuDate(string $value): string
+    {
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})/', trim($value), $matches)) {
+            return $matches[1];
+        }
+
+        return Carbon::parse($value)->format('Y-m-d');
     }
 
     /**

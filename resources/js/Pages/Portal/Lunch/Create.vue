@@ -2,6 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import PortalLayout from '@/Layouts/PortalLayout.vue';
 import { ArrowLeftIcon } from '@heroicons/vue/24/outline';
+import { ref } from 'vue';
 
 const props = defineProps({
     prefilledDate: {
@@ -30,7 +31,34 @@ function getTodayOrNextWeekday() {
     return today.toISOString().split('T')[0];
 }
 
+const localError = ref('');
+
 const submit = () => {
+    localError.value = '';
+
+    const dateInput = document.getElementById('menu_date');
+    const contentInput = document.getElementById('content');
+
+    if (dateInput instanceof HTMLInputElement && dateInput.value) {
+        form.menu_date = dateInput.value;
+    }
+    if (contentInput instanceof HTMLTextAreaElement) {
+        form.content = contentInput.value;
+    }
+
+    if (dateInput instanceof HTMLInputElement && dateInput.validity?.badInput) {
+        localError.value = 'Choose a valid menu date.';
+        return;
+    }
+    if (!form.menu_date) {
+        localError.value = 'Choose a menu date.';
+        return;
+    }
+    if (!String(form.content || '').trim()) {
+        localError.value = 'Enter the lunch menu for this day.';
+        return;
+    }
+
     form.post('/portal/lunch');
 };
 
@@ -67,6 +95,9 @@ const formatDate = (dateStr) => {
 
             <!-- Form -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div v-if="localError || form.errors.menu_date || form.errors.content" id="lunch-form-errors" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {{ localError || form.errors.menu_date || form.errors.content }}
+                </div>
                 <form @submit.prevent="submit" class="space-y-6">
                     <!-- Menu Date -->
                     <div>
@@ -78,7 +109,6 @@ const formatDate = (dateStr) => {
                             type="date"
                             v-model="form.menu_date"
                             class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                            required
                         />
                         <p class="mt-1 text-sm text-slate-500">
                             Selected: {{ formatDate(form.menu_date) }}
@@ -96,12 +126,7 @@ const formatDate = (dateStr) => {
                             v-model="form.content"
                             rows="8"
                             class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-                            placeholder="Pizza Day! 
-
-Cheese or pepperoni pizza with salad bar and fresh fruit.
-
-Includes: Milk, juice box, and cookie."
-                            required
+                            placeholder="Example: pizza, salad bar, and fruit"
                         ></textarea>
                         <p class="mt-1 text-sm text-slate-500">Describe the lunch menu for this day. HTML formatting is supported.</p>
                         <p v-if="form.errors.content" class="mt-1 text-sm text-red-600">{{ form.errors.content }}</p>
@@ -116,9 +141,10 @@ Includes: Milk, juice box, and cookie."
                             Cancel
                         </Link>
                         <button
-                            type="submit"
+                            type="button"
                             :disabled="form.processing"
                             class="px-6 py-2 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            @click="submit"
                         >
                             <span v-if="form.processing">Saving...</span>
                             <span v-else>Save Menu</span>

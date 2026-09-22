@@ -4,14 +4,18 @@ namespace App\Imports;
 
 use App\Models\LunchMenu;
 use Carbon\Carbon;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\SkipsOnError;
+use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Concerns\SkipsOnFailure;
-use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Events\BeforeSheet;
 use Maatwebsite\Excel\Validators\Failure;
+use Throwable;
 
-class LunchMenuImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFailure, SkipsEmptyRows
+class LunchMenuImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFailure, SkipsOnError, SkipsEmptyRows, WithEvents
 {
     protected array $errors = [];
     protected int $created = 0;
@@ -19,19 +23,38 @@ class LunchMenuImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
     protected int $skipped = 0;
     protected int $userId;
     
-    // Cache for existing menus
-    protected array $menuCache = [];
+    protected bool $skipSheet = false;
 
     public function __construct(int $userId)
     {
         $this->userId = $userId;
     }
 
+    public function registerEvents(): array
+    {
+        return [
+            BeforeSheet::class => function (BeforeSheet $event) {
+                $title = strtolower(trim($event->getSheet()->getTitle()));
+                $this->skipSheet = in_array($title, ['instructions', 'instruction'], true);
+            },
+        ];
+    }
+
     public function model(array $row)
     {
+        if ($this->skipSheet) {
+            return null;
+        }
+
         // Normalize headers (handle different variations)
         $date = $row['date'] ?? $row['menu_date'] ?? null;
-        $content = $row['menu'] ?? $row['menu_content'] ?? $row['content'] ?? $row['description'] ?? null;
+        $content = $row['menu']
+            ?? $row['menu_content']
+            ?? $row['content']
+            ?? $row['description']
+            ?? $row['lunch']
+            ?? $row['meal']
+            ?? null;
         $dayOfWeek = $row['day_of_week'] ?? $row['day'] ?? null; // Optional, ignored for processing
 
         if (!$date || !$content) {
@@ -62,26 +85,25 @@ class LunchMenuImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
         $existingMenu = LunchMenu::forDate($dateKey)->first();
 
         if ($existingMenu) {
-            // Update existing menu
             $existingMenu->update([
                 'content' => $content,
             ]);
             $this->updated++;
-            $this->menuCache[$dateKey] = $existingMenu;
-            return null; // Return null since we're updating, not creating
+
+            return null;
         }
 
-        // Create new menu
-        $menu = LunchMenu::create([
+        LunchMenu::create([
             'user_id' => $this->userId,
             'menu_date' => $dateKey,
             'content' => $content,
         ]);
-        
+
         $this->created++;
-        $this->menuCache[$dateKey] = $menu;
-        
-        return $menu;
+
+        // Already persisted. Returning the model makes the importer save it again,
+        // and a second insert rolls the whole file back.
+        return null;
     }
 
     /**
@@ -104,6 +126,13 @@ class LunchMenuImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
                 return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($date));
             } catch (\Exception $e) {
                 // Fall through to string parsing
+            }
+        }
+
+        if (is_string($date)) {
+            $date = trim($date);
+            if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $date, $matches)) {
+                return Carbon::createFromFormat('Y-m-d', $matches[1])->startOfDay();
             }
         }
 
@@ -157,6 +186,12 @@ class LunchMenuImport implements ToModel, WithHeadingRow, WithValidation, SkipsO
             $this->errors[] = "Row {$failure->row()}: " . implode(', ', $failure->errors());
             $this->skipped++;
         }
+    }
+
+    public function onError(Throwable $e)
+    {
+        $this->errors[] = $e->getMessage();
+        $this->skipped++;
     }
 
     public function getErrors(): array
