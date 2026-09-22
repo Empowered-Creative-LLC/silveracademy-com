@@ -16,6 +16,8 @@ const props = defineProps({
 
 const page = usePage();
 const successMessage = computed(() => page.props.flash?.success);
+const currentUserId = computed(() => page.props.auth?.user?.id);
+const canDelete = (post) => post.user_id === currentUserId.value || ['admin', 'super_admin'].includes(page.props.auth?.user?.role);
 
 const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -81,10 +83,11 @@ const deletePost = (post) => {
                                     {{ post.content.replace(/<[^>]*>/g, '').substring(0, 150) }}{{ post.content.length > 150 ? '...' : '' }}
                                 </p>
                                 <p class="text-xs text-slate-500 mt-2">
-                                    Posted {{ formatDate(post.published_at) }}
+                                    Posted {{ formatDate(post.published_at) }} by {{ post.author?.name || 'Staff' }}
                                 </p>
                             </div>
                             <button
+                                v-if="canDelete(post)"
                                 @click="deletePost(post)"
                                 class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete"
@@ -100,7 +103,7 @@ const deletePost = (post) => {
             <div v-else class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
                 <NewspaperIcon class="w-12 h-12 text-slate-300 mx-auto mb-4" />
                 <h3 class="text-lg font-semibold text-slate-900 mb-2">No News Posted Yet</h3>
-                <p class="text-slate-500 mb-6">You haven't posted any grade-specific news to parents.</p>
+                <p class="text-slate-500 mb-6">Grade messages sent to families will show up here.</p>
                 <Link
                     href="/portal/teacher-news/create"
                     class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"

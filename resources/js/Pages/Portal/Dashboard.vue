@@ -24,6 +24,10 @@ const props = defineProps({
     recentAnnouncements: Array,
     teacherAnnouncements: Array,
     gradeNews: Array,
+    familyMessages: {
+        type: Array,
+        default: () => [],
+    },
     linkedStudentGradeNames: {
         type: Array,
         default: () => [],
@@ -162,16 +166,27 @@ const formatWeekDate = (dateStr) => {
 };
 
 // Staff announcements toggle (Staff View).
-const staffAnnouncementTab = ref('all_staff');
 const allStaffAnnouncements = computed(() =>
     (props.teacherAnnouncements ?? []).filter(a => a.audience === 'teachers_only'),
 );
 const myGradeAnnouncements = computed(() =>
     (props.teacherAnnouncements ?? []).filter(a => a.audience === 'grade_teachers'),
 );
-const activeStaffAnnouncements = computed(() =>
-    staffAnnouncementTab.value === 'all_staff' ? allStaffAnnouncements.value : myGradeAnnouncements.value,
+const forMeAnnouncements = computed(() =>
+    (props.teacherAnnouncements ?? []).filter(a =>
+        a.audience === 'specific_teacher' && Number(a.target_teacher_id) === Number(props.user?.id),
+    ),
 );
+const staffAnnouncementTab = ref(forMeAnnouncements.value.length > 0 ? 'for_me' : 'all_staff');
+const activeStaffAnnouncements = computed(() => {
+    if (staffAnnouncementTab.value === 'my_grade') {
+        return myGradeAnnouncements.value;
+    }
+    if (staffAnnouncementTab.value === 'for_me') {
+        return forMeAnnouncements.value;
+    }
+    return allStaffAnnouncements.value;
+});
 
 const defaultQuickActionClass = 'text-slate-700 hover:bg-slate-100';
 
@@ -338,12 +353,12 @@ const quickActions = computed(() => {
                     <!-- Staff Announcements -->
                     <div v-if="teacherAnnouncements && teacherAnnouncements.length > 0" class="bg-slate-50 rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-white">
-                            <div class="flex items-center justify-between">
+                            <div class="flex flex-wrap items-center justify-between gap-3">
                                 <div class="flex items-center gap-2">
                                     <MegaphoneIcon class="w-5 h-5 text-slate-700" />
                                     <h2 class="text-lg font-serif font-semibold text-slate-900">Staff Announcements</h2>
                                 </div>
-                                <div class="flex items-center gap-2">
+                                <div class="flex flex-wrap items-center gap-2">
                                     <button
                                         type="button"
                                         class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
@@ -359,6 +374,20 @@ const quickActions = computed(() => {
                                         @click="staffAnnouncementTab = 'my_grade'"
                                     >
                                         My Grade
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                                        :class="staffAnnouncementTab === 'for_me' ? 'bg-purple-200 text-purple-900' : 'bg-white/70 text-slate-700 hover:bg-white'"
+                                        @click="staffAnnouncementTab = 'for_me'"
+                                    >
+                                        For Me
+                                        <span
+                                            v-if="forMeAnnouncements.length"
+                                            class="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-purple-700 px-1.5 text-xs text-white"
+                                        >
+                                            {{ forMeAnnouncements.length }}
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -421,9 +450,47 @@ const quickActions = computed(() => {
                                         <p class="text-xs text-slate-600 mt-2">
                                             Posted {{ formatDate(announcement.published_at) }}
                                         </p>
+                                        <p v-if="announcement.audience === 'grade_teachers'" class="text-xs text-amber-700 mt-1">
+                                            Families in this grade can see this on their dashboard.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages families received -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200">
+                            <div class="flex items-center justify-between gap-3">
+                                <h2 class="text-lg font-serif font-semibold text-slate-900">Messages to Families</h2>
+                                <Link href="/portal/teacher-news" class="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
+                                    View all →
+                                </Link>
+                            </div>
+                        </div>
+                        <div v-if="familyMessages && familyMessages.length > 0" class="divide-y divide-slate-200">
+                            <div
+                                v-for="message in familyMessages"
+                                :key="message.id"
+                                class="px-6 py-4"
+                            >
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <p class="text-sm font-medium text-slate-900">{{ message.title }}</p>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                        {{ message.target_grade?.name || 'Grade' }}
+                                    </span>
+                                </div>
+                                <p class="text-sm text-slate-600 mt-1 line-clamp-2">
+                                    {{ message.content.replace(/<[^>]*>/g, '').substring(0, 150) }}{{ message.content.length > 150 ? '...' : '' }}
+                                </p>
+                                <p class="text-xs text-slate-500 mt-2">
+                                    Sent {{ formatDate(message.published_at) }} by {{ message.author?.name || 'Staff' }}
+                                </p>
+                            </div>
+                        </div>
+                        <div v-else class="px-6 py-8 text-sm text-slate-500">
+                            Messages sent to families in your grade will appear here.
                         </div>
                     </div>
 

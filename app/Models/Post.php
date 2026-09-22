@@ -291,10 +291,11 @@ class Post extends Model
                     ->orWhereNull('audience');
             });
 
-            // Grade-level posts for their children's grades
+            // Grade-level posts for their children's grades.
+            // Teachers post with audience "grade". Admin Grade Level posts use "grade_teachers".
             if (!empty($childrenGradeIds)) {
                 $q->orWhere(function ($subQ) use ($childrenGradeIds) {
-                    $subQ->where('audience', 'grade')
+                    $subQ->whereIn('audience', ['grade', 'grade_teachers'])
                         ->whereIn('target_grade_id', $childrenGradeIds);
                 });
             }
