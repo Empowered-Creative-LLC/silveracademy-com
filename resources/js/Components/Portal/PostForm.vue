@@ -150,9 +150,9 @@ const audienceDescription = computed(() => {
             return 'This announcement will be visible to all staff members in their dashboard.';
         case 'grade_teachers':
             const grade = props.grades.find(g => g.id === props.form.target_grade_id);
-            return grade 
-                ? `This announcement will only be visible to ${grade.name} teachers.`
-                : 'Select a grade level to target specific teachers.';
+            return grade
+                ? `Parents of ${grade.name} students will see this on their dashboard, and ${grade.name} teachers will see it on theirs.`
+                : 'Select a grade level. Parents of that grade and its teachers will see this message.';
         case 'specific_teacher':
             const teacher = props.teachers.find(t => t.id === props.form.target_teacher_id);
             return teacher 

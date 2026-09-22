@@ -61,7 +61,7 @@ class DashboardController extends Controller
         if ($user->isAdmin() || $user->isSuperAdmin()) {
             $gradeNews = Post::with(['targetGrade', 'author'])
                 ->where('type', 'news')
-                ->where('audience', 'grade')
+                ->whereIn('audience', ['grade', 'grade_teachers'])
                 ->whereNotNull('published_at')
                 ->where('published_at', '<=', now())
                 ->orderBy('published_at', 'desc')
@@ -76,15 +76,19 @@ class DashboardController extends Controller
             $linkedStudentGradeNames = $children->map(fn ($s) => $s->grade?->name)->filter()->unique()->values()->toArray();
 
             if (!empty($childrenGradeIds)) {
-                $gradeNews = Post::with(['targetGrade', 'author'])
-                    ->where('type', 'news')
-                    ->where('audience', 'grade')
-                    ->whereIn('target_grade_id', $childrenGradeIds)
-                    ->whereNotNull('published_at')
-                    ->where('published_at', '<=', now())
-                    ->orderBy('published_at', 'desc')
-                    ->take(10)
-                    ->get();
+                $gradeNews = $this->familyGradeNews($childrenGradeIds);
+            }
+        }
+
+        // Grade messages families received, so teachers can see what was sent.
+        $familyMessages = collect();
+        if ($user->isTeacher() || $user->isAdmin() || $user->isSuperAdmin()) {
+            $familyGradeIds = $user->isTeacher()
+                ? $user->grades()->pluck('grades.id')->unique()->all()
+                : \App\Models\Grade::pluck('id')->all();
+
+            if (! empty($familyGradeIds)) {
+                $familyMessages = $this->familyGradeNews($familyGradeIds);
             }
         }
 
@@ -146,12 +150,31 @@ class DashboardController extends Controller
             'recentAnnouncements' => $recentAnnouncements,
             'teacherAnnouncements' => $teacherAnnouncements,
             'gradeNews' => $gradeNews,
+            'familyMessages' => $familyMessages,
             'linkedStudentGradeNames' => $linkedStudentGradeNames ?? [],
             'teacherGrades' => $teacherGrades,
             'studentCount' => $studentCount,
             'staffCount' => $staffCount,
             'upcomingEventsCount' => $upcomingEventsCount,
         ]);
+    }
+
+    /**
+     * News a grade's families see: teacher posts and admin Grade Level posts.
+     *
+     * @param  array<int, int>  $gradeIds
+     */
+    private function familyGradeNews(array $gradeIds)
+    {
+        return Post::with(['targetGrade', 'author'])
+            ->where('type', 'news')
+            ->whereIn('audience', ['grade', 'grade_teachers'])
+            ->whereIn('target_grade_id', $gradeIds)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->orderBy('published_at', 'desc')
+            ->take(10)
+            ->get();
     }
 
     /**

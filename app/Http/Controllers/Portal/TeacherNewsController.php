@@ -90,14 +90,20 @@ class TeacherNewsController extends Controller
         
         $user = auth()->user();
 
-        $query = Post::with('targetGrade')
+        $query = Post::with(['targetGrade', 'author'])
             ->where('type', 'news')
-            ->where('audience', 'grade')
+            ->whereIn('audience', ['grade', 'grade_teachers'])
             ->orderBy('created_at', 'desc');
 
-        // Admins see all grade news, teachers see only their own
+        // Admins see every grade message. Teachers see messages for their grades.
         if (!$user->isAdmin() && !$user->isSuperAdmin()) {
-            $query->where('user_id', $user->id);
+            $gradeIds = $user->grades()->pluck('grades.id')->all();
+            $query->where(function ($gradeQuery) use ($user, $gradeIds) {
+                $gradeQuery->where('user_id', $user->id);
+                if (! empty($gradeIds)) {
+                    $gradeQuery->orWhereIn('target_grade_id', $gradeIds);
+                }
+            });
         }
 
         $posts = $query->get();

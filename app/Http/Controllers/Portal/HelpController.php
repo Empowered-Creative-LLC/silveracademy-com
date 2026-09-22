@@ -221,7 +221,7 @@ class HelpController extends Controller
                     ],
                     [
                         'title' => 'Managing Your Posts',
-                        'content' => 'Click "My Posts" in the Staff Announcements section to view all news you\'ve created. From there, you can see which grade each post was for and delete posts if needed.',
+                        'content' => 'Your dashboard lists these under Messages to Families, including notes an admin sent to your grade. Open My Grade News to see the full list and delete your own posts.',
                     ],
                     [
                         'title' => 'What Parents See',
