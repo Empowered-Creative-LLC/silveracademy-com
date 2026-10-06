@@ -59,6 +59,17 @@ const isAdmin = computed(() => {
     return isActualAdmin.value;
 });
 
+const isTeacher = computed(() => props.user?.role === 'teacher');
+const canAddEvent = computed(() => {
+    if (isSuperAdmin.value) {
+        return previewRole.value !== 'parent';
+    }
+    return isActualAdmin.value || isTeacher.value;
+});
+const addEventHref = computed(() => (
+    isTeacher.value ? '/portal/teacher-events/create' : '/portal/posts/create?type=event'
+));
+
 const onPreviewRoleChanged = (event) => {
     if (event.detail && previewRoles.includes(event.detail)) {
         previewRole.value = event.detail;
@@ -201,10 +212,13 @@ const getEventsForDate = (dateStr) => {
             dayEvents.push({
                 id: `event-${event.id}`,
                 name: event.title,
-                time: formatTime(event.event_date),
+                time: event.is_all_day ? '' : formatTime(event.event_date),
+                isAllDay: Boolean(event.is_all_day),
                 datetime: event.event_date,
                 href: '#',
                 type: 'event',
+                authorName: event.author_name || '',
+                gradeName: event.grade_name || '',
                 isRecurring: event.is_recurring || false,
                 recurrenceType: event.recurrence_type || 'none',
                 isSchoolClosure: event.is_school_closure || false,
@@ -355,11 +369,14 @@ const currentWeekItems = computed(() => {
                 weekItems.push({
                     id: `event-${event.id}`,
                     name: event.title,
-                    time: formatTime(event.event_date),
+                    time: event.is_all_day ? '' : formatTime(event.event_date),
+                    isAllDay: Boolean(event.is_all_day),
                     datetime: event.event_date,
                     dayName: eventDate.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'America/New_York' }),
                     formattedDate: eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' }),
                     type: 'event',
+                    authorName: event.author_name || '',
+                    gradeName: event.grade_name || '',
                     description: event.description || '',
                     buttonText: event.button_text || '',
                     buttonUrl: event.button_url || '',
@@ -542,7 +559,10 @@ const listItemsForCurrentMonth = computed(() => {
                 sortDate: dateKey,
                 itemType: 'event',
                 title: event.title,
+                authorName: event.author_name || '',
+                gradeName: event.grade_name || '',
                 datetime: event.event_date,
+                isAllDay: Boolean(event.is_all_day),
                 description: event.description || '',
                 buttonText: event.button_text || '',
                 buttonUrl: event.button_url || '',
@@ -744,8 +764,8 @@ const listEmptyMessage = computed(() => {
                         
                         <!-- Add event button -->
                         <Link 
-                            v-if="currentView === 'events' || currentView === 'both'"
-                            href="/portal/posts/create?type=event" 
+                            v-if="canAddEvent && (currentView === 'events' || currentView === 'both')"
+                            :href="addEventHref" 
                             class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                         >
                             Add event
@@ -769,9 +789,9 @@ const listEmptyMessage = computed(() => {
                         >
                             <MenuItems class="absolute right-0 z-10 mt-3 w-36 origin-top-right divide-y divide-slate-100 overflow-hidden rounded-md bg-white shadow-lg outline outline-1 outline-black/5">
                                 <div class="py-1">
-                                    <MenuItem v-if="currentView === 'events' || currentView === 'both'" v-slot="{ active }">
+                                    <MenuItem v-if="canAddEvent && (currentView === 'events' || currentView === 'both')" v-slot="{ active }">
                                         <Link 
-                                            href="/portal/posts/create?type=event" 
+                                            :href="addEventHref" 
                                             :class="[active ? 'bg-slate-100 text-slate-900 outline-hidden' : 'text-slate-700', 'block px-4 py-2 text-sm']"
                                         >
                                             Create event
@@ -1018,8 +1038,11 @@ const listEmptyMessage = computed(() => {
                         @click="openEventDetails({
                             id: item.id,
                             name: item.title,
+                            authorName: item.authorName || '',
+                            gradeName: item.gradeName || '',
                             datetime: item.datetime,
-                            time: item.itemType === 'event' ? formatTime(item.datetime) : '',
+                            time: item.itemType === 'event' && !item.isAllDay ? formatTime(item.datetime) : '',
+                            isAllDay: Boolean(item.isAllDay),
                             type: item.itemType,
                             description: item.description,
                             buttonText: item.buttonText || '',
@@ -1055,7 +1078,8 @@ const listEmptyMessage = computed(() => {
                                 </div>
                                 <p class="text-sm text-slate-600 break-words">
                                     {{ formatFullDate(item.datetime) }}
-                                    <span v-if="item.itemType === 'event' && item.datetime">at {{ formatTime(item.datetime) }}</span>
+                                    <span v-if="item.itemType === 'event' && item.isAllDay">All day</span>
+                                    <span v-else-if="item.itemType === 'event' && item.datetime">at {{ formatTime(item.datetime) }}</span>
                                 </p>
                             </div>
                             <span class="self-start sm:self-center text-xs text-brand-700 bg-brand-50 px-2 py-1 rounded-md flex-shrink-0">View</span>
@@ -1085,7 +1109,10 @@ const listEmptyMessage = computed(() => {
                             >
                                 {{ item.name }}
                             </p>
-                            <time v-if="item.time" :datetime="item.datetime" class="mt-2 flex items-center text-slate-700">
+                            <time v-if="item.isAllDay" :datetime="item.datetime" class="mt-2 flex items-center text-slate-700">
+                                All day
+                            </time>
+                            <time v-else-if="item.time" :datetime="item.datetime" class="mt-2 flex items-center text-slate-700">
                                 <ClockIcon class="mr-2 size-5 text-slate-400" aria-hidden="true" />
                                 {{ item.time }}
                             </time>
@@ -1125,6 +1152,7 @@ const listEmptyMessage = computed(() => {
                         <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                             <span class="text-sm font-medium text-slate-500">{{ item.dayName }}</span>
                             <span class="text-sm font-semibold text-slate-900">{{ item.formattedDate }}</span>
+                            <span v-if="item.isAllDay" class="text-sm text-slate-500">All day</span>
                         </div>
                         <div class="min-w-0">
                             <!-- Lunch Menu -->
@@ -1261,7 +1289,10 @@ const listEmptyMessage = computed(() => {
                                                 selectedEvent?.type === 'lunch' ? 'text-amber-100' : selectedEvent?.isSchoolClosure ? 'text-red-100' : 'text-brand-100'
                                             ]">
                                                 {{ formatFullDate(selectedEvent?.datetime) }}
-                                                <span v-if="selectedEvent?.time && selectedEvent?.type !== 'lunch'">
+                                                <span v-if="selectedEvent?.isAllDay && selectedEvent?.type !== 'lunch'">
+                                                    All day
+                                                </span>
+                                                <span v-else-if="selectedEvent?.time && selectedEvent?.type !== 'lunch'">
                                                     at {{ selectedEvent?.time }}
                                                 </span>
                                             </p>
@@ -1301,6 +1332,12 @@ const listEmptyMessage = computed(() => {
                                         >
                                             Event
                                         </span>
+                                        <span
+                                            v-if="selectedEvent?.gradeName"
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
+                                        >
+                                            {{ selectedEvent.gradeName }}
+                                        </span>
                                         <!-- Recurrence Badge -->
                                         <span 
                                             v-if="selectedEvent?.isRecurring"
@@ -1313,6 +1350,9 @@ const listEmptyMessage = computed(() => {
                                         </span>
                                     </div>
                                     
+                                    <p v-if="selectedEvent?.authorName && selectedEvent?.type !== 'lunch'" class="mb-3 text-sm text-slate-600">
+                                        From {{ selectedEvent.authorName }}
+                                    </p>
                                     <!-- Lunch Menu Content (with preserved formatting) -->
                                     <div v-if="selectedEvent?.type === 'lunch' && selectedEvent?.description" class="text-slate-700">
                                         <p class="whitespace-pre-line text-base leading-relaxed">{{ getMenuPreview(selectedEvent.description, 2000) }}</p>

@@ -127,6 +127,8 @@ Route::middleware(['auth', 'approved'])->prefix('portal')->name('portal.')->grou
     Route::get('/teacher-news/create', [TeacherNewsController::class, 'create'])->name('teacher-news.create');
     Route::post('/teacher-news', [TeacherNewsController::class, 'store'])->name('teacher-news.store');
     Route::delete('/teacher-news/{post}', [TeacherNewsController::class, 'destroy'])->name('teacher-news.destroy');
+    Route::get('/teacher-events/create', [TeacherNewsController::class, 'createEvent'])->name('teacher-events.create');
+    Route::post('/teacher-events', [TeacherNewsController::class, 'storeEvent'])->name('teacher-events.store');
 });
 
 /*

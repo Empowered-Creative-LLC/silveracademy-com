@@ -112,13 +112,21 @@ const submitForm = async () => {
         await showFormError('Choose a start date for this event.');
         return;
     }
-    if (props.form.type === 'event' && !['internal', 'external'].includes(props.form.event_visibility)) {
-        await showFormError('Choose whether this event is internal or external.');
+    if (props.form.type === 'event' && !['internal', 'families', 'external'].includes(props.form.event_visibility)) {
+        await showFormError('Choose who can see this event.');
         return;
     }
 
     emit('submit');
 };
+
+watch(() => props.form.is_all_day, (allDay) => {
+    if (!allDay) {
+        return;
+    }
+    props.form.event_start_date = String(props.form.event_start_date || '').slice(0, 10);
+    props.form.event_end_date = String(props.form.event_end_date || '').slice(0, 10);
+});
 
 // Clear targeting fields when audience changes
 watch(() => props.form.audience, (newAudience) => {
@@ -445,7 +453,7 @@ const audienceDescription = computed(() => {
                 
                 <div class="mb-4">
                     <p class="block text-sm font-medium text-slate-700 mb-2">Who can see this event?</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <label
                             :class="[
                                 'flex flex-col px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors',
@@ -457,6 +465,18 @@ const audienceDescription = computed(() => {
                             <input type="radio" v-model="form.event_visibility" value="internal" class="sr-only" />
                             <span class="font-medium">Internal</span>
                             <span class="text-sm mt-1">Staff only. Teachers and administrators can see this in the portal.</span>
+                        </label>
+                        <label
+                            :class="[
+                                'flex flex-col px-4 py-3 border-2 rounded-lg cursor-pointer transition-colors',
+                                form.event_visibility === 'families'
+                                    ? 'border-amber-500 bg-amber-50 text-amber-900'
+                                    : 'border-slate-200 hover:border-slate-300'
+                            ]"
+                        >
+                            <input type="radio" v-model="form.event_visibility" value="families" class="sr-only" />
+                            <span class="font-medium">Families</span>
+                            <span class="text-sm mt-1">Families see this in the portal. It stays off the public website.</span>
                         </label>
                         <label
                             :class="[
@@ -493,6 +513,18 @@ const audienceDescription = computed(() => {
                     </label>
                 </div>
                 
+                <label class="mb-4 flex items-start gap-3 cursor-pointer">
+                    <input
+                        type="checkbox"
+                        v-model="form.is_all_day"
+                        class="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span>
+                        <span class="block text-sm font-medium text-slate-800">All day</span>
+                        <span class="block text-sm text-slate-500">No time is needed. Use this for holidays and other day-long events.</span>
+                    </span>
+                </label>
+
                 <!-- Event Dates -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
@@ -501,7 +533,7 @@ const audienceDescription = computed(() => {
                         </label>
                         <input
                             id="event_start_date"
-                            type="datetime-local"
+                            :type="form.is_all_day ? 'date' : 'datetime-local'"
                             v-model="form.event_start_date"
                             class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                         />
@@ -513,7 +545,7 @@ const audienceDescription = computed(() => {
                         </label>
                         <input
                             id="event_end_date"
-                            type="datetime-local"
+                            :type="form.is_all_day ? 'date' : 'datetime-local'"
                             v-model="form.event_end_date"
                             class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                         />

@@ -225,7 +225,11 @@ class HelpController extends Controller
                     ],
                     [
                         'title' => 'What Parents See',
-                        'content' => 'Your grade-specific news appears in the "News & Announcements" section at the top of parents\' dashboards. It shows a grade badge, your name as the author, and the date posted.',
+                        'content' => 'Your grade-specific news appears in the "News & Announcements" section at the top of parents\' dashboards. It shows a grade badge, your name as the author, and the date posted. Every teacher assigned to the grade can post. There is not a separate homeroom-only permission.',
+                    ],
+                    [
+                        'title' => 'Grade Calendar Events',
+                        'content' => 'From the calendar, choose Add event. Pick one of your grades, then enter the date and message. Families in that grade see the event on their calendar with your name. Other grades do not.',
                     ],
                     [
                         'title' => 'No Grades Assigned?',

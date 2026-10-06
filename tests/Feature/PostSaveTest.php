@@ -213,6 +213,185 @@ class PostSaveTest extends TestCase
         $this->get('/news-events')->assertDontSee('Snow day');
     }
 
+    public function test_families_event_stays_in_the_portal_and_off_the_public_site(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-06 09:00:00', 'America/New_York'));
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->post('/portal/posts', $this->payload([
+                'type' => 'event',
+                'title' => 'Family picnic',
+                'event_visibility' => 'families',
+                'event_start_date' => '2026-11-04T16:00',
+                'publish_now' => '1',
+            ]))
+            ->assertRedirect(route('portal.posts.index'));
+
+        $this->actingAs($admin)
+            ->post('/portal/posts', $this->payload([
+                'type' => 'event',
+                'title' => 'Public gala',
+                'event_visibility' => 'external',
+                'event_start_date' => '2026-11-05T18:00',
+                'publish_now' => '1',
+            ]))
+            ->assertRedirect(route('portal.posts.index'));
+
+        $this->actingAs($admin)
+            ->post('/portal/posts', $this->payload([
+                'type' => 'event',
+                'title' => 'Staff retreat',
+                'event_visibility' => 'internal',
+                'event_start_date' => '2026-11-06T15:00',
+                'publish_now' => '1',
+            ]))
+            ->assertRedirect(route('portal.posts.index'));
+
+        $families = Post::where('title', 'Family picnic')->first();
+
+        $this->assertNotNull($families);
+        $this->assertFalse($families->is_public);
+        $this->assertSame('all', $families->audience);
+
+        $parent = User::factory()->create([
+            'role' => User::ROLE_PARENT,
+            'is_approved' => true,
+        ]);
+        $teacher = User::factory()->create([
+            'role' => User::ROLE_TEACHER,
+            'is_approved' => true,
+        ]);
+
+        $parentTitles = $this->calendarTitles($parent);
+        $this->assertContains('Family picnic', $parentTitles);
+        $this->assertContains('Public gala', $parentTitles);
+        $this->assertNotContains('Staff retreat', $parentTitles);
+        $this->assertContains('Family picnic', $this->calendarTitles($teacher));
+
+        $parentDashboard = collect($this->inertiaProp($parent, '/portal/dashboard', 'upcomingEvents'))
+            ->pluck('title')
+            ->all();
+        $this->assertContains('Family picnic', $parentDashboard);
+        $this->assertNotContains('Staff retreat', $parentDashboard);
+
+        $publicPage = $this->get('/news-events');
+        $publicPage->assertOk();
+        $publicPage->assertSee('Public gala');
+        $publicPage->assertDontSee('Family picnic');
+        $publicPage->assertDontSee('Staff retreat');
+    }
+
+    public function test_all_day_event_saves_the_calendar_day_without_a_clock_time(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-06 09:00:00', 'America/New_York'));
+
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->post('/portal/posts', $this->payload([
+                'type' => 'event',
+                'title' => 'Winter break',
+                'event_visibility' => 'families',
+                'is_all_day' => '1',
+                'event_start_date' => '2026-12-25',
+                'publish_now' => '1',
+            ]))
+            ->assertRedirect(route('portal.posts.index'));
+
+        $post = Post::where('title', 'Winter break')->first();
+
+        $this->assertNotNull($post);
+        $this->assertTrue($post->is_all_day);
+        $this->assertSame(
+            '2026-12-25 00:00:00',
+            $post->event_start_date->timezone('America/New_York')->format('Y-m-d H:i:s')
+        );
+
+        $holiday = collect($this->inertiaProp($admin, '/portal/calendar', 'events'))
+            ->firstWhere('title', 'Winter break');
+
+        $this->assertNotNull($holiday);
+        $this->assertTrue($holiday['is_all_day']);
+    }
+
+    public function test_posts_index_sorts_by_date_and_event_name(): void
+    {
+        $admin = $this->admin();
+
+        Post::create([
+            'user_id' => $admin->id,
+            'type' => 'event',
+            'audience' => 'all',
+            'title' => 'Band concert',
+            'content' => 'Music',
+            'event_start_date' => Carbon::parse('2026-12-01 15:00:00', 'America/New_York'),
+            'is_public' => true,
+        ]);
+        Post::create([
+            'user_id' => $admin->id,
+            'type' => 'event',
+            'audience' => 'all',
+            'title' => 'Assembly',
+            'content' => 'Gather',
+            'event_start_date' => Carbon::parse('2026-11-01 09:00:00', 'America/New_York'),
+            'is_public' => true,
+        ]);
+        Post::create([
+            'user_id' => $admin->id,
+            'type' => 'news',
+            'audience' => 'all',
+            'title' => 'Newsletter',
+            'content' => 'Note',
+            'published_at' => Carbon::parse('2026-10-15 08:00:00', 'America/New_York'),
+        ]);
+        Post::create([
+            'user_id' => $admin->id,
+            'type' => 'event',
+            'audience' => 'teachers_only',
+            'title' => 'Undated rehearsal',
+            'content' => 'TBD',
+            'event_start_date' => null,
+            'is_public' => false,
+        ]);
+
+        $byDate = collect($this->inertiaProp($admin, '/portal/posts?sort=date&direction=asc', 'posts')['data'])
+            ->pluck('title')
+            ->all();
+
+        $this->assertSame(
+            ['Newsletter', 'Assembly', 'Band concert', 'Undated rehearsal'],
+            $byDate
+        );
+
+        $byDateDesc = collect($this->inertiaProp($admin, '/portal/posts?sort=date&direction=desc', 'posts')['data'])
+            ->pluck('title')
+            ->all();
+
+        $this->assertSame(
+            ['Band concert', 'Assembly', 'Newsletter', 'Undated rehearsal'],
+            $byDateDesc
+        );
+
+        $byTitle = collect($this->inertiaProp($admin, '/portal/posts?sort=title&direction=asc', 'posts')['data'])
+            ->pluck('title')
+            ->all();
+
+        $this->assertSame(
+            ['Assembly', 'Band concert', 'Newsletter', 'Undated rehearsal'],
+            $byTitle
+        );
+
+        $filtered = $this->inertiaProp($admin, '/portal/posts?sort=title&direction=asc&search=Assembly&type=event', 'posts');
+        $this->assertSame(['Assembly'], collect($filtered['data'])->pluck('title')->all());
+
+        $filters = $this->inertiaProp($admin, '/portal/posts?sort=title&direction=asc&search=Assembly&type=event', 'filters');
+        $this->assertSame('Assembly', $filters['search']);
+        $this->assertSame('event', $filters['type']);
+        $this->assertSame('title', $filters['sort']);
+    }
+
     private function admin(): User
     {
         return User::factory()->create([

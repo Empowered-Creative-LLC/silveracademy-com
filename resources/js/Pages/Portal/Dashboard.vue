@@ -203,6 +203,7 @@ const quickActions = computed(() => {
     if (showTeacherView.value) {
         return [
             { href: '/portal/teacher-news/create', title: 'Post Grade News', icon: PencilSquareIcon, class: 'text-emerald-700 hover:bg-emerald-50' },
+            { href: '/portal/teacher-events/create', title: 'Add Grade Event', icon: CalendarIcon, class: 'text-emerald-700 hover:bg-emerald-50' },
             { href: '/portal/calendar', title: 'View Calendar', icon: CalendarIcon },
             { href: '/portal/calendar?view=lunch', title: 'Lunch Menu', icon: ClipboardDocumentListIcon },
             { href: '/news-events', title: 'News & Events', icon: MegaphoneIcon, external: true },
@@ -521,6 +522,9 @@ const quickActions = computed(() => {
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900">{{ event.title }}</p>
+                                        <p v-if="event.author?.name" class="text-xs text-slate-500 mt-1">
+                                            From {{ event.author.name }}<span v-if="event.target_grade?.name"> · {{ event.target_grade.name }}</span>
+                                        </p>
                                         <p class="text-xs text-slate-500 mt-1 flex items-center">
                                             <ClockIcon class="w-3 h-3 mr-1" />
                                             {{ formatDate(event.event_start_date) }}
@@ -700,6 +704,9 @@ const quickActions = computed(() => {
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900">{{ event.title }}</p>
+                                        <p v-if="event.author?.name" class="text-xs text-slate-500 mt-1">
+                                            From {{ event.author.name }}<span v-if="event.target_grade?.name"> · {{ event.target_grade.name }}</span>
+                                        </p>
                                         <p class="text-xs text-slate-500 mt-1 flex items-center">
                                             <ClockIcon class="w-3 h-3 mr-1" />
                                             {{ formatDate(event.event_start_date) }}

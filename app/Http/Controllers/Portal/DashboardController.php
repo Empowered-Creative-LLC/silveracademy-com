@@ -182,14 +182,11 @@ class DashboardController extends Controller
      */
     private function visibleEvents(User $user)
     {
-        $events = Post::query()->events()->published()->upcoming();
-
-        if (! $user->isStaff()) {
-            $events->where(function ($query) {
-                $query->where('audience', 'all')->orWhereNull('audience');
-            });
-        }
-
-        return $events;
+        return Post::query()
+            ->with(['author', 'targetGrade'])
+            ->events()
+            ->published()
+            ->upcoming()
+            ->visibleOnFamilyCalendar($user);
     }
 }

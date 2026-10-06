@@ -44,6 +44,29 @@ const formatDate = (date) => {
         day: 'numeric',
     });
 };
+
+const applySort = (column) => {
+    const currentSort = props.filters?.sort || '';
+    const currentDirection = props.filters?.direction === 'desc' ? 'desc' : 'asc';
+    const nextDirection = currentSort === column && currentDirection === 'asc' ? 'desc' : 'asc';
+    const params = {
+        sort: column,
+        direction: nextDirection,
+    };
+
+    if (props.filters?.search) {
+        params.search = props.filters.search;
+    }
+    if (props.filters?.type) {
+        params.type = props.filters.type;
+    }
+
+    router.get('/portal/posts', params, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
 </script>
 
 <template>
@@ -78,6 +101,39 @@ const formatDate = (date) => {
 
             <!-- Posts Table -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <p class="text-sm font-medium text-slate-700">Sort by</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            @click="applySort('date')"
+                            :aria-pressed="filters?.sort === 'date'"
+                            :class="[
+                                'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                                filters?.sort === 'date'
+                                    ? 'bg-brand-600 text-white'
+                                    : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100',
+                            ]"
+                        >
+                            Date
+                            <span v-if="filters?.sort === 'date'" class="ml-1.5 text-xs">{{ filters?.direction === 'desc' ? '↓' : '↑' }}</span>
+                        </button>
+                        <button
+                            type="button"
+                            @click="applySort('title')"
+                            :aria-pressed="filters?.sort === 'title'"
+                            :class="[
+                                'inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
+                                filters?.sort === 'title'
+                                    ? 'bg-brand-600 text-white'
+                                    : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100',
+                            ]"
+                        >
+                            Event
+                            <span v-if="filters?.sort === 'title'" class="ml-1.5 text-xs">{{ filters?.direction === 'desc' ? '↓' : '↑' }}</span>
+                        </button>
+                    </div>
+                </div>
                 <div v-if="posts.data.length === 0" class="p-12 text-center">
                     <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
@@ -172,6 +228,13 @@ const formatDate = (date) => {
                                         title="Visible to staff only"
                                     >
                                         Internal
+                                    </span>
+                                    <span
+                                        v-else-if="post.type === 'event'"
+                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
+                                        title="Visible to families in the portal"
+                                    >
+                                        Families
                                     </span>
                                     <!-- Audience indicator - All Staff -->
                                     <span 
@@ -331,6 +394,24 @@ const formatDate = (date) => {
                                 ]"
                             >
                                 {{ post.type === 'news' ? 'News' : 'Event' }}
+                            </span>
+                            <span
+                                v-if="post.type === 'event' && post.is_public"
+                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-100 text-brand-800"
+                            >
+                                External
+                            </span>
+                            <span
+                                v-else-if="post.type === 'event' && post.audience === 'teachers_only'"
+                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
+                            >
+                                Internal
+                            </span>
+                            <span
+                                v-else-if="post.type === 'event'"
+                                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800"
+                            >
+                                Families
                             </span>
                             <span
                                 :class="[
