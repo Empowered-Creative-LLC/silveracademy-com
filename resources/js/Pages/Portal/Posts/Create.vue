@@ -26,6 +26,7 @@ const form = useForm({
     image: null,
     event_start_date: '',
     event_end_date: '',
+    is_all_day: false,
     button_text: '',
     button_url: '',
     recurrence_type: 'none',
@@ -39,6 +40,7 @@ const submit = () => {
         // Explicitly convert booleans for FormData compatibility
         is_public: data.is_public ? '1' : '0',
         is_school_closure: data.is_school_closure ? '1' : '0',
+        is_all_day: data.is_all_day ? '1' : '0',
         publish_now: data.publish_now ? '1' : '0',
     })).post('/portal/posts', {
         forceFormData: true,

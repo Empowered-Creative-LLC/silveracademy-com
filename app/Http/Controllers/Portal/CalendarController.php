@@ -29,14 +29,14 @@ class CalendarController extends Controller
         $calendarEvents = CalendarEvent::orderBy('event_date', 'asc')
             ->get();
 
-        // Published events. Internal events are staff-only.
-        $posts = Post::query()->events()->published();
-        if (! $request->user()?->isStaff()) {
-            $posts->where(function ($query) {
-                $query->where('audience', 'all')->orWhereNull('audience');
-            });
-        }
-        $posts = $posts->get();
+        // Published events. Internal events stay staff-only. Grade events
+        // are visible to families of that grade.
+        $posts = Post::query()
+            ->with(['author', 'targetGrade'])
+            ->events()
+            ->published()
+            ->visibleOnFamilyCalendar($request->user())
+            ->get();
 
         // Generate event instances (including recurring)
         $postEvents = collect();
@@ -67,7 +67,10 @@ class CalendarController extends Controller
                         'recurrence_type' => $post->recurrence_type,
                         'is_recurring' => true,
                         'is_school_closure' => $post->is_school_closure,
+                        'is_all_day' => (bool) $post->is_all_day,
                         'type' => 'event',
+                        'author_name' => $post->author?->name,
+                        'grade_name' => $post->targetGrade?->name,
                     ]);
                     $occurrenceIndex++;
                 }
@@ -92,7 +95,10 @@ class CalendarController extends Controller
                     'recurrence_type' => 'none',
                     'is_recurring' => false,
                     'is_school_closure' => $post->is_school_closure,
+                    'is_all_day' => (bool) $post->is_all_day,
                     'type' => 'event',
+                    'author_name' => $post->author?->name,
+                    'grade_name' => $post->targetGrade?->name,
                 ]);
             }
         }

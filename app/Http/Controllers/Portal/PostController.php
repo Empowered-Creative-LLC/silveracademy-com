@@ -19,13 +19,21 @@ class PostController extends Controller
      */
     public function index(Request $request): Response
     {
-        $posts = Post::with(['author', 'targetGrade', 'targetTeacher'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $posts = Post::with(['author', 'targetGrade', 'targetTeacher']);
+
+        if ($request->filled('search')) {
+            $posts->where('title', 'like', '%'.$request->string('search')->toString().'%');
+        }
+
+        if (in_array($request->query('type'), ['news', 'event'], true)) {
+            $posts->where('type', $request->query('type'));
+        }
+
+        $this->applyIndexSort($posts, $request);
 
         return Inertia::render('Portal/Posts/Index', [
-            'posts' => $posts,
-            'filters' => $request->only(['search', 'type']),
+            'posts' => $posts->paginate(15)->withQueryString(),
+            'filters' => $request->only(['search', 'type', 'sort', 'direction']),
         ]);
     }
 
@@ -57,7 +65,8 @@ class PostController extends Controller
             'type' => 'required|in:news,event',
             'is_school_closure' => 'boolean',
             'is_public' => 'boolean',
-            'event_visibility' => 'nullable|in:internal,external',
+            'event_visibility' => 'nullable|in:internal,families,external',
+            'is_all_day' => 'boolean',
             'audience' => 'nullable|in:all,teachers_only,grade_teachers,specific_teacher',
             'target_grade_id' => 'nullable|exists:grades,id',
             'target_teacher_id' => 'nullable|exists:users,id',
@@ -80,16 +89,9 @@ class PostController extends Controller
 
         [$isPublic, $audience, $targetGradeId, $targetTeacherId] = $this->resolvedVisibility($validated, $request);
 
-        // Parse datetime-local input as Eastern Time and store as-is (app timezone is America/New_York)
-        // so Laravel persists and reads the same wall-clock time without misinterpretation
-        $eventStartDate = null;
-        $eventEndDate = null;
-        if (!empty($validated['event_start_date'])) {
-            $eventStartDate = Carbon::parse($validated['event_start_date'], 'America/New_York');
-        }
-        if (!empty($validated['event_end_date'])) {
-            $eventEndDate = Carbon::parse($validated['event_end_date'], 'America/New_York');
-        }
+        $isAllDay = ($validated['type'] ?? null) === 'event' && $request->boolean('is_all_day');
+        $eventStartDate = $this->eventDate($validated['event_start_date'] ?? null, $isAllDay);
+        $eventEndDate = $this->eventDate($validated['event_end_date'] ?? null, $isAllDay);
 
         $post = Post::create([
             'user_id' => $request->user()->id,
@@ -104,6 +106,7 @@ class PostController extends Controller
             'image_path' => $imagePath,
             'event_start_date' => $eventStartDate,
             'event_end_date' => $eventEndDate,
+            'is_all_day' => $isAllDay,
             'button_text' => $validated['button_text'] ?? null,
             'button_url' => $validated['button_url'] ?? null,
             'recurrence_type' => $validated['recurrence_type'] ?? 'none',
@@ -144,7 +147,8 @@ class PostController extends Controller
             'type' => 'required|in:news,event',
             'is_school_closure' => 'boolean',
             'is_public' => 'boolean',
-            'event_visibility' => 'nullable|in:internal,external',
+            'event_visibility' => 'nullable|in:internal,families,external',
+            'is_all_day' => 'boolean',
             'audience' => 'nullable|in:all,teachers_only,grade_teachers,specific_teacher',
             'target_grade_id' => 'nullable|exists:grades,id',
             'target_teacher_id' => 'nullable|exists:users,id',
@@ -178,15 +182,9 @@ class PostController extends Controller
 
         [$isPublic, $audience, $targetGradeId, $targetTeacherId] = $this->resolvedVisibility($validated, $request);
 
-        // Parse datetime-local input as Eastern Time and store as-is (app timezone is America/New_York)
-        $eventStartDate = null;
-        $eventEndDate = null;
-        if (!empty($validated['event_start_date'])) {
-            $eventStartDate = Carbon::parse($validated['event_start_date'], 'America/New_York');
-        }
-        if (!empty($validated['event_end_date'])) {
-            $eventEndDate = Carbon::parse($validated['event_end_date'], 'America/New_York');
-        }
+        $isAllDay = ($validated['type'] ?? null) === 'event' && $request->boolean('is_all_day');
+        $eventStartDate = $this->eventDate($validated['event_start_date'] ?? null, $isAllDay);
+        $eventEndDate = $this->eventDate($validated['event_end_date'] ?? null, $isAllDay);
 
         $post->update([
             'type' => $validated['type'],
@@ -200,6 +198,7 @@ class PostController extends Controller
             'image_path' => $imagePath,
             'event_start_date' => $eventStartDate,
             'event_end_date' => $eventEndDate,
+            'is_all_day' => $isAllDay,
             'button_text' => $validated['button_text'] ?? null,
             'button_url' => $validated['button_url'] ?? null,
             'recurrence_type' => $validated['recurrence_type'] ?? 'none',
@@ -259,7 +258,34 @@ class PostController extends Controller
     }
 
     /**
-     * News keeps its audience. Events are either internal (staff only) or external (public).
+     * Sort the mixed news and events list. Date uses the event start for events
+     * and published_at (or created_at) for news. Events with no start date sort last.
+     */
+    private function applyIndexSort($query, Request $request): void
+    {
+        $sort = $request->query('sort');
+        $direction = $request->query('direction') === 'desc' ? 'desc' : 'asc';
+
+        if ($sort === 'title') {
+            $query->orderBy('title', $direction)->orderBy('id');
+
+            return;
+        }
+
+        if ($sort === 'date') {
+            $dateExpr = "CASE WHEN type = 'event' THEN event_start_date ELSE COALESCE(published_at, created_at) END";
+            $query->orderByRaw('('.$dateExpr.') IS NULL')
+                ->orderByRaw($dateExpr.' '.$direction)
+                ->orderBy('id');
+
+            return;
+        }
+
+        $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+    }
+
+    /**
+     * News keeps its audience. Events are internal (staff), families (portal), or external (public).
      *
      * @return array{0: bool, 1: string, 2: int|null, 3: int|null}
      */
@@ -278,16 +304,19 @@ class PostController extends Controller
         $isPublic = $request->boolean('is_public', false);
 
         if (($validated['type'] ?? null) === 'event') {
-            if (($validated['event_visibility'] ?? 'internal') === 'external') {
+            $visibility = $validated['event_visibility'] ?? 'internal';
+            $targetGradeId = null;
+            $targetTeacherId = null;
+
+            if ($visibility === 'external') {
                 $isPublic = true;
                 $audience = 'all';
-                $targetGradeId = null;
-                $targetTeacherId = null;
+            } elseif ($visibility === 'families') {
+                $isPublic = false;
+                $audience = 'all';
             } else {
                 $isPublic = false;
                 $audience = 'teachers_only';
-                $targetGradeId = null;
-                $targetTeacherId = null;
             }
         }
 
@@ -298,6 +327,20 @@ class PostController extends Controller
         }
 
         return [$isPublic, $audience, $targetGradeId, $targetTeacherId];
+    }
+
+    /**
+     * All-day events keep the chosen calendar date and do not store a clock time.
+     */
+    private function eventDate(?string $value, bool $allDay): ?Carbon
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $date = Carbon::parse($value, 'America/New_York');
+
+        return $allDay ? $date->startOfDay() : $date;
     }
 
     /**

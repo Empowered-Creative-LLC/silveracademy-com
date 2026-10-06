@@ -43,13 +43,25 @@ const formatDate = (dateString) => {
     return `${year}-${month}-${day}`;
 };
 
+const easternDateOnly = (dateString) => formatDateTimeLocal(dateString).slice(0, 10);
+
+const eventVisibilityFor = (post) => {
+    if (post.is_public) {
+        return 'external';
+    }
+    if (['teachers_only', 'grade_teachers', 'specific_teacher'].includes(post.audience)) {
+        return 'internal';
+    }
+    return 'families';
+};
+
+const isAllDay = Boolean(props.post.is_all_day);
+
 const form = useForm({
     type: props.post.type,
     is_school_closure: props.post.is_school_closure || false,
     is_public: props.post.is_public || false,
-    event_visibility: props.post.is_public
-        ? 'external'
-        : (['teachers_only', 'grade_teachers', 'specific_teacher'].includes(props.post.audience) ? 'internal' : 'external'),
+    event_visibility: eventVisibilityFor(props.post),
     audience: props.post.audience || 'all',
     target_grade_id: props.post.target_grade_id || null,
     target_teacher_id: props.post.target_teacher_id || null,
@@ -57,8 +69,13 @@ const form = useForm({
     content: props.post.content,
     image: null,
     remove_image: false,
-    event_start_date: formatDateTimeLocal(props.post.event_start_date),
-    event_end_date: formatDateTimeLocal(props.post.event_end_date),
+    is_all_day: isAllDay,
+    event_start_date: isAllDay
+        ? easternDateOnly(props.post.event_start_date)
+        : formatDateTimeLocal(props.post.event_start_date),
+    event_end_date: isAllDay
+        ? easternDateOnly(props.post.event_end_date)
+        : formatDateTimeLocal(props.post.event_end_date),
     button_text: props.post.button_text || '',
     button_url: props.post.button_url || '',
     recurrence_type: props.post.recurrence_type || 'none',
@@ -72,6 +89,7 @@ const submit = () => {
         // Explicitly convert booleans for FormData compatibility
         is_public: data.is_public ? '1' : '0',
         is_school_closure: data.is_school_closure ? '1' : '0',
+        is_all_day: data.is_all_day ? '1' : '0',
     })).post(`/portal/posts/${props.post.slug}`, {
         forceFormData: true,
         onError: () => {

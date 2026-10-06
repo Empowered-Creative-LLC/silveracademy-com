@@ -27,6 +27,7 @@ class Post extends Model
         'image_path',
         'event_start_date',
         'event_end_date',
+        'is_all_day',
         'button_text',
         'button_url',
         'recurrence_type',
@@ -37,6 +38,7 @@ class Post extends Model
     protected $casts = [
         'event_start_date' => 'datetime',
         'event_end_date' => 'datetime',
+        'is_all_day' => 'boolean',
         'recurrence_end_date' => 'date',
         'published_at' => 'datetime',
         'is_school_closure' => 'boolean',
@@ -275,6 +277,30 @@ class Post extends Model
     {
         return $query->where('audience', 'classroom')
             ->where('target_classroom_id', $classroomId);
+    }
+
+    /**
+     * Family calendar: school-wide events, plus grade events for a parent's children.
+     * Staff see every published event.
+     */
+    public function scopeVisibleOnFamilyCalendar(Builder $query, User $user): Builder
+    {
+        if ($user->isStaff()) {
+            return $query;
+        }
+
+        $gradeIds = $user->children()->pluck('grade_id')->unique()->filter()->all();
+
+        return $query->where(function ($familyQuery) use ($gradeIds) {
+            $familyQuery->where('audience', 'all')->orWhereNull('audience');
+
+            if ($gradeIds !== []) {
+                $familyQuery->orWhere(function ($gradeQuery) use ($gradeIds) {
+                    $gradeQuery->where('audience', 'grade')
+                        ->whereIn('target_grade_id', $gradeIds);
+                });
+            }
+        });
     }
 
     /**
