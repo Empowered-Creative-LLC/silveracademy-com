@@ -19,7 +19,7 @@ const utilityNav = computed(() => [
     { name: 'Schedule a Visit', href: 'https://calendar.app.google/Y5NrAjA9RooWgwZ98', external: true },
     { name: 'Apply', href: 'https://app.simpletuitionsolutions.org/register?sc=21760', external: true },
     { name: 'Family Portal', href: portalLink.value },
-    { name: 'Give', href: 'https://wl.donorperfect.net/weblink/WebLink.aspx?name=E341196&id=36' },
+    { name: 'Give', href: '/get-involved/donate' },
 ]);
 
     const mainNav = [
