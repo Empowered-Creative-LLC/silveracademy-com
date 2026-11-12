@@ -138,8 +138,9 @@ import {
                         <h3 class="font-bold text-xl text-slate-900 mb-4">Give Online</h3>
                         <p class="text-slate-600 mb-6">Accepts Visa, MasterCard, AmEx, and Discover.</p>
                         <a 
-                            href="https://wl.donorperfect.net/weblink/WebLink.aspx?name=E341196&id=36" 
+                            href="https://causematch.com/silveracademy"
                             target="_blank"
+                            rel="noopener noreferrer"
                             class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700 transition-colors"
                         >
                             Donate Now

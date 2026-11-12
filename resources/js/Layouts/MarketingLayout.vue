@@ -387,7 +387,9 @@ const socialLinks = [
                                 Staff Login
                             </Link>
                             <a 
-                                href="https://wl.donorperfect.net/weblink/WebLink.aspx?name=E341196&id=36" 
+                                href="https://causematch.com/silveracademy"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 class="text-sm uppercase tracking-wide text-white hover:text-accent-300 transition-colors font-medium"
                             >
                                 Give a Gift

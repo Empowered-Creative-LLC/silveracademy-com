@@ -94,8 +94,9 @@ import {
                             Join us in building a bright future for our students and community.
                         </p>
                         <a 
-                            href="https://wl.donorperfect.net/weblink/WebLink.aspx?name=E341196&id=36" 
+                            href="https://causematch.com/silveracademy"
                             target="_blank"
+                            rel="noopener noreferrer"
                             class="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-lg text-white bg-accent-500 hover:bg-accent-600 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
                         >
                             Donate Now
