@@ -51,7 +51,7 @@ defineProps({
                         class="bg-white rounded-xl shadow-md overflow-hidden border border-slate-100 hover:shadow-lg transition-shadow duration-300"
                     >
                         <!-- Photo -->
-                        <div class="aspect-[3/4] bg-slate-100 flex items-center justify-center overflow-hidden">
+                        <div class="aspect-[3/4] bg-slate-200 flex items-center justify-center overflow-hidden">
                             <img
                                 v-if="member.photo"
                                 :src="member.photo"
